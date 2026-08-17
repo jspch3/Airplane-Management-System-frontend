@@ -160,7 +160,8 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Phone Number (Optional)</label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputmode="numeric"
                     formControlName="phone"
                     class="form-control"
                     [ngClass]="{ 'is-invalid': isPassengerFieldInvalid(i, 'phone') }"
@@ -310,7 +311,8 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             <div class="form-group">
               <label class="form-label">Card Number (16 Digits) <span class="required">*</span></label>
               <input
-                type="text"
+                type="tel"
+                inputmode="numeric"
                 formControlName="cardNumber"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isPaymentFieldInvalid('cardNumber') }"
@@ -332,7 +334,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                   placeholder="12/28"
                 />
                 <div *ngIf="isPaymentFieldInvalid('expiryDate')" class="invalid-feedback">
-                  Expiry date must be in MM/YY format.
+                  Expiry date must be in valid MM/YY format and in the future.
                 </div>
               </div>
 
@@ -340,6 +342,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 <label class="form-label">CVV (3 Digits) <span class="required">*</span></label>
                 <input
                   type="password"
+                  inputmode="numeric"
                   formControlName="cvv"
                   class="form-control"
                   [ngClass]="{ 'is-invalid': isPaymentFieldInvalid('cvv') }"
@@ -347,7 +350,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                   maxLength="3"
                 />
                 <div *ngIf="isPaymentFieldInvalid('cvv')" class="invalid-feedback">
-                  CVV must be 3 numeric digits.
+                  CVV must be 3 numeric digits (000 is invalid).
                 </div>
               </div>
             </div>
@@ -578,8 +581,8 @@ export class BookFlightComponent implements OnInit {
 
     this.paymentForm = this.fb.group({
       cardNumber: ['', [Validators.pattern(/^[0-9]{16}$/)]],
-      expiryDate: ['', [Validators.pattern(/^(0[1-9]|1[0-2])\/([0-9]{2})$/)]],
-      cvv: ['', [Validators.pattern(/^[0-9]{3}$/)]],
+      expiryDate: ['', [this.cardExpiryValidator()]],
+      cvv: ['', [Validators.pattern(/^(?!000)[0-9]{3}$/)]],
       upiId: ['', [Validators.pattern(/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/)]]
     });
   }
@@ -608,6 +611,35 @@ export class BookFlightComponent implements OnInit {
       if (!control.value) return null;
       const val = control.value;
       return (val >= min && val <= max) ? null : { outOfRange: true };
+    };
+  }
+
+  cardExpiryValidator() {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) return null;
+      const parts = control.value.split('/');
+      if (parts.length !== 2) return { invalidFormat: true };
+
+      const month = parseInt(parts[0], 10);
+      const yearTwoDigits = parseInt(parts[1], 10);
+
+      if (isNaN(month) || isNaN(yearTwoDigits) || month < 1 || month > 12) {
+        return { invalidFormat: true };
+      }
+
+      const now = new Date();
+      const currentYearTwoDigits = now.getFullYear() % 100;
+      const currentMonth = now.getMonth() + 1;
+
+      if (yearTwoDigits < currentYearTwoDigits || yearTwoDigits > currentYearTwoDigits + 15) {
+        return { invalidFormat: true };
+      }
+
+      if (yearTwoDigits === currentYearTwoDigits && month < currentMonth) {
+        return { expired: true };
+      }
+
+      return null;
     };
   }
 
@@ -750,7 +782,7 @@ export class BookFlightComponent implements OnInit {
       const expiry = this.paymentForm.value.expiryDate;
       const cvv = this.paymentForm.value.cvv;
       if (!cardNum || !expiry || !cvv || this.paymentForm.get('cardNumber')?.invalid || this.paymentForm.get('expiryDate')?.invalid || this.paymentForm.get('cvv')?.invalid) {
-        this.paymentError = 'Please enter valid 16-digit Card Number, MM/YY Expiry, and 3-digit CVV.';
+        this.paymentError = 'Please enter valid 16-digit Card Number, valid MM/YY Expiry, and valid 3-digit CVV (non-zero).';
         return;
       }
     } else if (this.paymentMethod === 'UPI') {
@@ -801,12 +833,12 @@ export class BookFlightComponent implements OnInit {
     window.print();
   }
 
-  goToBookings(): void {
+  confirmAndDone(): void {
     this.showConfirmationTicketModal = false;
     this.router.navigate(['/bookings']);
   }
 
-  confirmAndDone(): void {
+  goToBookings(): void {
     this.showConfirmationTicketModal = false;
     this.router.navigate(['/bookings']);
   }

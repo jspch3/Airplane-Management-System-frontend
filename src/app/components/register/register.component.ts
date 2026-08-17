@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 import { User } from '../../models/user.model';
+import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
 
 @Component({
   selector: 'app-register',
@@ -14,18 +15,18 @@ import { User } from '../../models/user.model';
       <div class="card">
         <div style="margin-bottom: 16px;">
           <div class="card-title">
-            <span>👤 Customer Account Registration [US001]</span>
+            <span>👤 Customer Account Registration</span>
           </div>
         </div>
         <p class="card-subtitle">
-          Fill in your passenger details below. Registration is open to customers aged 18 years or older.
+          Fill in your passenger details below. Registration is open to customers aged 18 to 120 years.
         </p>
 
         <!-- Prominent Mobile Info Banner -->
         <div class="info-banner">
           <span>ℹ️</span>
           <div>
-            <strong>Registration Rules:</strong> You must be <strong>18 years or older</strong>. Mobile number must be 10 digits starting with <strong>6, 7, 8, or 9</strong>. Zip code must be 6 numeric digits.
+            <strong>Registration Rules:</strong> Age must be <strong>18 to 120 years</strong>. Mobile number must be 10 digits starting with <strong>6, 7, 8, or 9</strong>. Entering a valid 6-digit Indian PIN Code auto-populates City and State.
           </div>
         </div>
 
@@ -47,12 +48,12 @@ import { User } from '../../models/user.model';
                 formControlName="fullName"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('fullName'), 'is-valid': isFieldValid('fullName') }"
-                placeholder="e.g. Sarah Connor"
+                placeholder="e.g. Sarah Connor (min 2 alphabetic characters)"
               />
               <div *ngIf="isFieldInvalid('fullName')" class="invalid-feedback">
                 <div *ngIf="f['fullName'].errors?.['required']">Full Name is required.</div>
                 <div *ngIf="f['fullName'].errors?.['pattern']">
-                  Name must contain letters only with a single space between words.
+                  Name must contain at least 2 alphabetic characters with single spaces between words.
                 </div>
               </div>
             </div>
@@ -60,7 +61,8 @@ import { User } from '../../models/user.model';
             <div class="form-group">
               <label class="form-label">Phone Number <span class="required">*</span></label>
               <input
-                type="text"
+                type="tel"
+                inputmode="numeric"
                 formControlName="phone"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('phone'), 'is-valid': isFieldValid('phone') }"
@@ -84,12 +86,12 @@ import { User } from '../../models/user.model';
                 formControlName="userName"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('userName'), 'is-valid': isFieldValid('userName') }"
-                placeholder="e.g. sarah_connor"
+                placeholder="e.g. sarah123"
               />
               <div *ngIf="isFieldInvalid('userName')" class="invalid-feedback">
                 <div *ngIf="f['userName'].errors?.['required']">Username is required.</div>
                 <div *ngIf="f['userName'].errors?.['pattern']">
-                  Username must be 4-30 characters (letters, numbers, underscores only).
+                  Username must be 4-30 alphanumeric characters (symbols and underscores-only are rejected).
                 </div>
               </div>
             </div>
@@ -174,13 +176,12 @@ import { User } from '../../models/user.model';
                 formControlName="address1"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('address1'), 'is-valid': isFieldValid('address1') }"
-                placeholder="e.g. 742 Evergreen Terrace"
+                placeholder="e.g. St. Martin's Road, Suite 40"
               />
               <div *ngIf="isFieldInvalid('address1')" class="invalid-feedback">
                 <div *ngIf="f['address1'].errors?.['required']">Address line 1 is required.</div>
                 <div *ngIf="f['address1'].errors?.['minlength']">Address line 1 must be at least 5 characters.</div>
                 <div *ngIf="f['address1'].errors?.['maxlength']">Address line 1 cannot exceed 100 characters.</div>
-                <div *ngIf="f['address1'].errors?.['pattern']">Address cannot contain double spaces or invalid symbols.</div>
               </div>
             </div>
 
@@ -191,17 +192,47 @@ import { User } from '../../models/user.model';
                 formControlName="address2"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('address2') }"
-                placeholder="Apt / Suite"
+                placeholder="Apt / Suite / Landmark"
               />
               <div *ngIf="isFieldInvalid('address2')" class="invalid-feedback">
                 <div *ngIf="f['address2'].errors?.['maxlength']">Address line 2 cannot exceed 100 characters.</div>
-                <div *ngIf="f['address2'].errors?.['pattern']">Address line 2 cannot contain double spaces.</div>
               </div>
             </div>
           </div>
 
-          <!-- City, State, Zip & DOB with >=18 Age Check -->
+          <!-- City, State, Zip & DOB with >=18 and <=120 Age Check -->
           <div class="grid-4">
+            <div class="form-group">
+              <label class="form-label">Zip Code (6 Digits) <span class="required">*</span></label>
+              <input
+                type="text"
+                inputmode="numeric"
+                formControlName="zipCode"
+                class="form-control"
+                (input)="onZipCodeInput()"
+                [ngClass]="{ 'is-invalid': isFieldInvalid('zipCode'), 'is-valid': isFieldValid('zipCode') }"
+                placeholder="e.g. 400001"
+              />
+              <div *ngIf="isFieldInvalid('zipCode')" class="invalid-feedback">
+                Zip code must be a 6-digit Indian PIN code.
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">State <span class="required">*</span></label>
+              <select
+                formControlName="state"
+                class="form-select"
+                [ngClass]="{ 'is-invalid': isFieldInvalid('state'), 'is-valid': isFieldValid('state') }"
+              >
+                <option value="">Select State / UT</option>
+                <option *ngFor="let st of indianStates" [value]="st">{{ st }}</option>
+              </select>
+              <div *ngIf="isFieldInvalid('state')" class="invalid-feedback">
+                Please select a valid Indian State/UT.
+              </div>
+            </div>
+
             <div class="form-group">
               <label class="form-label">City <span class="required">*</span></label>
               <input
@@ -209,52 +240,26 @@ import { User } from '../../models/user.model';
                 formControlName="city"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('city'), 'is-valid': isFieldValid('city') }"
-                placeholder="e.g. Chicago"
+                placeholder="e.g. Mumbai (min 3 chars)"
               />
               <div *ngIf="isFieldInvalid('city')" class="invalid-feedback">
-                City is required (letters only, single space).
+                City is required (at least 3 alphabetic characters).
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">State <span class="required">*</span></label>
-              <input
-                type="text"
-                formControlName="state"
-                class="form-control"
-                [ngClass]="{ 'is-invalid': isFieldInvalid('state'), 'is-valid': isFieldValid('state') }"
-                placeholder="e.g. Illinois"
-              />
-              <div *ngIf="isFieldInvalid('state')" class="invalid-feedback">
-                State is required (letters only, single space).
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Zip Code (6 Digits) <span class="required">*</span></label>
-              <input
-                type="text"
-                formControlName="zipCode"
-                class="form-control"
-                [ngClass]="{ 'is-invalid': isFieldInvalid('zipCode'), 'is-valid': isFieldValid('zipCode') }"
-                placeholder="e.g. 400001"
-              />
-              <div *ngIf="isFieldInvalid('zipCode')" class="invalid-feedback">
-                Zip code must be exactly 6 numeric digits.
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Date of Birth (&ge;18 yrs) <span class="required">*</span></label>
+              <label class="form-label">Date of Birth (18-120 yrs) <span class="required">*</span></label>
               <input
                 type="date"
                 formControlName="dob"
+                [min]="minDobDate"
+                [max]="maxDobDate"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('dob'), 'is-valid': isFieldValid('dob') }"
               />
               <div *ngIf="isFieldInvalid('dob')" class="invalid-feedback">
                 <div *ngIf="f['dob'].errors?.['required']">Date of birth is required.</div>
-                <div *ngIf="f['dob'].errors?.['underAge']">You must be at least 18 years old to register.</div>
+                <div *ngIf="f['dob'].errors?.['ageRange']">User age must be strictly between 18 and 120 years.</div>
               </div>
             </div>
           </div>
@@ -279,11 +284,15 @@ import { User } from '../../models/user.model';
     </div>
   `
 })
-export class RegisterComponent {
+export class RegisterComponent implements OnInit {
   registerForm: FormGroup;
   isSubmitting = false;
   successMessage = '';
   serverError = '';
+
+  indianStates = INDIAN_STATES;
+  minDobDate: string = '';
+  maxDobDate: string = '';
 
   constructor(
     private fb: FormBuilder,
@@ -291,10 +300,17 @@ export class RegisterComponent {
     private router: Router,
     private location: Location
   ) {
+    const today = new Date();
+    const maxDate = new Date(today.getFullYear() - 18, today.getMonth(), today.getDate());
+    const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
+
+    this.maxDobDate = maxDate.toISOString().split('T')[0];
+    this.minDobDate = minDate.toISOString().split('T')[0];
+
     this.registerForm = this.fb.group(
       {
-        fullName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z]+( [a-zA-Z]+)*$/)]],
-        userName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]{4,30}$/)]],
+        fullName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z]{2,}( [a-zA-Z]+)*$/)]],
+        userName: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9]{4,30}$/)]],
         password: [
           '',
           [
@@ -304,20 +320,22 @@ export class RegisterComponent {
         ],
         confirmPassword: ['', [Validators.required]],
         role: ['CUSTOMER', [Validators.required]],
-        customerCategory: ['GOLD', [Validators.required]],
+        customerCategory: ['REGULAR', [Validators.required]],
         phone: ['', [Validators.required, Validators.pattern(/^[6-9][0-9]{9}$/)]],
         emailPrefix: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._%+-]+$/)]],
         emailDomain: ['gmail.com', [Validators.required]],
-        address1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(100), Validators.pattern(/^[a-zA-Z0-9#,.-\/]+( [a-zA-Z0-9#,.-\/]+)*$/)]],
-        address2: ['', [Validators.maxLength(100), Validators.pattern(/^$|^[a-zA-Z0-9#,.-\/]+( [a-zA-Z0-9#,.-\/]+)*$/)]],
-        city: ['', [Validators.required, Validators.pattern(/^[a-zA-Z]+( [a-zA-Z]+)*$/)]],
-        state: ['', [Validators.required, Validators.pattern(/^[a-zA-Z]+( [a-zA-Z]+)*$/)]],
+        address1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(100)]],
+        address2: ['', [Validators.maxLength(100)]],
+        city: ['', [Validators.required, Validators.pattern(/^[a-zA-Z\s]{3,50}$/)]],
+        state: ['', [Validators.required]],
         zipCode: ['', [Validators.required, Validators.pattern(/^[1-9][0-9]{5}$/)]],
-        dob: ['', [Validators.required, this.minAgeValidator(18)]]
+        dob: ['', [Validators.required, this.ageRangeValidator(18, 120)]]
       },
       { validators: [this.passwordMatchValidator] }
     );
   }
+
+  ngOnInit(): void {}
 
   get f() {
     return this.registerForm.controls;
@@ -325,6 +343,19 @@ export class RegisterComponent {
 
   goBack(): void {
     this.location.back();
+  }
+
+  onZipCodeInput(): void {
+    const code = this.registerForm.get('zipCode')?.value;
+    if (code && code.length === 6) {
+      const loc = lookupPincode(code);
+      if (loc) {
+        this.registerForm.patchValue({
+          city: loc.city,
+          state: loc.state
+        });
+      }
+    }
   }
 
   isFieldInvalid(field: string): boolean {
@@ -337,7 +368,7 @@ export class RegisterComponent {
     return !!(control && control.valid && (control.dirty || control.touched));
   }
 
-  minAgeValidator(minAge: number) {
+  ageRangeValidator(minAge: number, maxAge: number) {
     return (control: AbstractControl): ValidationErrors | null => {
       if (!control.value) return null;
       const dob = new Date(control.value);
@@ -347,7 +378,7 @@ export class RegisterComponent {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
         age--;
       }
-      return age >= minAge ? null : { underAge: true };
+      return (age >= minAge && age <= maxAge) ? null : { ageRange: true };
     };
   }
 

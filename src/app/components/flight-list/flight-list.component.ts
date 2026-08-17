@@ -6,6 +6,7 @@ import { FlightService } from '../../services/flight.service';
 import { AuthService } from '../../services/auth.service';
 import { Flight } from '../../models/flight.model';
 import { LoginResponse } from '../../models/user.model';
+import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
 @Component({
   selector: 'app-flight-list',
@@ -17,16 +18,15 @@ import { LoginResponse } from '../../models/user.model';
         <div class="card-header-bar">
           <div>
             <div class="card-title">
-              <span>✈️ Available Flights Search & Schedule [US005 / US006]</span>
+              <span>✈️ Available Flights Search & Schedule</span>
             </div>
             <p class="card-subtitle" style="margin-bottom: 0;">
               Browse available flight routes, departure/arrival timings, and seat class pricing in Indian Rupees (&#8377;).
             </p>
           </div>
           <div style="display: flex; align-items: center; gap: 14px;">
-            <!-- Total Flight Count Metric Badge -->
             <div class="badge" style="background: var(--info-sky); color: var(--info-text); padding: 10px 18px; font-size: 0.9rem; border-radius: 30px; border: 1px solid rgba(2, 132, 199, 0.2);">
-              Total Registered Flights: <strong>{{ flights.length }}</strong>
+              Total Registered Flights: <strong>{{ filteredFlights.length }}</strong>
             </div>
             <div *ngIf="user && user.role === 'ADMIN'">
               <a routerLink="/admin/flights/new" class="btn btn-primary" style="padding: 10px 18px; font-size: 0.9rem;">
@@ -44,23 +44,33 @@ import { LoginResponse } from '../../models/user.model';
           ❌ {{ actionError }}
         </div>
 
-        <!-- Carrier Search Filter -->
-        <div class="form-group" style="max-width: 420px; margin-bottom: 24px;">
-          <label class="form-label">🔍 Live Search by Carrier Name</label>
-          <div style="display: flex; gap: 10px;">
+        <!-- Carrier & Route Filters -->
+        <div class="grid-3" style="margin-bottom: 24px;">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">🔍 Live Search by Carrier Name</label>
             <input
               type="text"
               [(ngModel)]="searchCarrierName"
-              (keyup.enter)="searchByCarrier()"
+              (input)="applyFilters()"
               class="form-control"
               placeholder="e.g. Indigo or Air India"
             />
-            <button (click)="searchByCarrier()" class="btn btn-primary" style="padding: 10px 16px;">
-              Search
-            </button>
-            <button (click)="resetSearch()" class="btn btn-outline" style="padding: 10px 14px;">
-              Reset
-            </button>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Filter Origin City</label>
+            <select [(ngModel)]="searchOrigin" (change)="applyFilters()" class="form-select">
+              <option value="">All Origins</option>
+              <option *ngFor="let apt of majorAirports" [value]="apt">{{ apt }}</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">Filter Destination City</label>
+            <select [(ngModel)]="searchDestination" (change)="applyFilters()" class="form-select">
+              <option value="">All Destinations</option>
+              <option *ngFor="let apt of majorAirports" [value]="apt">{{ apt }}</option>
+            </select>
           </div>
         </div>
 
@@ -68,12 +78,12 @@ import { LoginResponse } from '../../models/user.model';
           Loading available flight schedules...
         </div>
 
-        <div *ngIf="!isLoading && flights.length === 0" class="alert alert-warning">
-          No flights found matching your carrier search.
+        <div *ngIf="!isLoading && filteredFlights.length === 0" class="alert alert-warning">
+          No flights found matching your search filters.
         </div>
 
         <!-- Flight Table -->
-        <div *ngIf="!isLoading && flights.length > 0" class="table-responsive">
+        <div *ngIf="!isLoading && filteredFlights.length > 0" class="table-responsive">
           <table class="table">
             <thead>
               <tr>
@@ -87,7 +97,7 @@ import { LoginResponse } from '../../models/user.model';
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let f of flights">
+              <tr *ngFor="let f of filteredFlights">
                 <td><strong>#AMS-{{ f.flightId }}</strong></td>
                 <td>
                   <span style="font-weight: 800; color: var(--primary-navy);">{{ f.carrierName }}</span>
@@ -157,12 +167,12 @@ import { LoginResponse } from '../../models/user.model';
       </div>
     </div>
 
-    <!-- Flight Deletion Confirmation Modal [US006] -->
+    <!-- Flight Deletion Confirmation Modal -->
     <div class="modal-backdrop" *ngIf="showDeleteModal && flightToDelete">
       <div class="modal-content" style="max-width: 580px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
           <h3 style="font-size: 1.3rem; font-weight: 800; color: #dc2626;">
-            🗑️ Confirm Flight Deletion [US006]
+            🗑️ Confirm Flight Deletion
           </h3>
           <button (click)="closeDeleteModal()" class="btn btn-outline" style="padding: 2px 8px;">✕</button>
         </div>
@@ -190,7 +200,12 @@ import { LoginResponse } from '../../models/user.model';
 })
 export class FlightListComponent implements OnInit {
   flights: Flight[] = [];
+  filteredFlights: Flight[] = [];
+
   searchCarrierName = '';
+  searchOrigin = '';
+  searchDestination = '';
+
   isLoading = true;
   user: LoginResponse | null = null;
   actionMsg = '';
@@ -199,6 +214,8 @@ export class FlightListComponent implements OnInit {
   showDeleteModal = false;
   flightToDelete: Flight | null = null;
   isDeleting = false;
+
+  majorAirports = MAJOR_AIRPORTS;
 
   constructor(
     private flightService: FlightService,
@@ -221,30 +238,21 @@ export class FlightListComponent implements OnInit {
     this.flightService.getAllFlights().subscribe({
       next: (data: Flight[]) => {
         this.flights = data;
+        this.applyFilters();
         this.isLoading = false;
       },
       error: () => this.isLoading = false
     });
   }
 
-  searchByCarrier(): void {
-    if (!this.searchCarrierName.trim()) {
-      this.loadAllFlights();
-      return;
-    }
-    this.isLoading = true;
-    this.flightService.getFlightsByCarrierName(this.searchCarrierName.trim()).subscribe({
-      next: (data: Flight[]) => {
-        this.flights = data;
-        this.isLoading = false;
-      },
-      error: () => this.isLoading = false
+  applyFilters(): void {
+    this.filteredFlights = this.flights.filter(f => {
+      const matchCarrier = !this.searchCarrierName.trim() ||
+        f.carrierName.toLowerCase().includes(this.searchCarrierName.trim().toLowerCase());
+      const matchOrigin = !this.searchOrigin || f.origin === this.searchOrigin;
+      const matchDest = !this.searchDestination || f.destination === this.searchDestination;
+      return matchCarrier && matchOrigin && matchDest;
     });
-  }
-
-  resetSearch(): void {
-    this.searchCarrierName = '';
-    this.loadAllFlights();
   }
 
   openDeleteModal(flight: Flight): void {

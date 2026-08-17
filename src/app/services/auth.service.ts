@@ -46,8 +46,24 @@ export class AuthService {
     );
   }
 
+  getMaskedPhone(identity: string): Observable<{ userName: string; maskedPhone: string }> {
+    return this.http.post<{ userName: string; maskedPhone: string }>(`${this.apiUrl}/auth/forgot-password/mask-phone`, { identity });
+  }
+
+  verifyMobile(userName: string, mobileNumber: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/auth/forgot-password/verify-mobile`, { userName, mobileNumber });
+  }
+
+  resetPassword(userName: string, mobileNumber: string, newPassword: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${this.apiUrl}/auth/forgot-password/reset-password`, { userName, mobileNumber, newPassword });
+  }
+
   getUserById(userId: number): Observable<User> {
     return this.http.get<User>(`${this.apiUrl}/users/${userId}`);
+  }
+
+  getAllUsers(): Observable<User[]> {
+    return this.http.get<User[]>(`${this.apiUrl}/users`);
   }
 
   updateProfile(userId: number, user: Partial<User>): Observable<User> {

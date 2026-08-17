@@ -155,38 +155,38 @@ import { LoginResponse } from '../../models/user.model';
             </div>
           </div>
 
-            <!-- Passenger Table -->
-            <div style="margin-bottom: 20px;">
-              <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 10px;">Confirmed Passenger Roster</h4>
-              <table class="table" style="font-size: 0.875rem;">
-                <thead>
-                  <tr style="background: var(--gray-100);">
-                    <th>#</th>
-                    <th>Seat No</th>
-                    <th>Passenger Name</th>
-                    <th>Age & Gender</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let p of printableBooking.passengers; let i = index">
-                    <td>{{ i + 1 }}</td>
-                    <td>
-                      <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; border: 1px solid #bae6fd;">
-                        💺 {{ p.seatNumber || ((i + 12) + 'A') }}
-                      </span>
-                    </td>
-                    <td><strong>{{ p.name }}</strong></td>
-                    <td>{{ p.age }} yrs ({{ p.gender }})</td>
-                    <td>
-                      <span class="badge" [ngClass]="(p.status === 'CANCELLED' || p.status === 'Cancelled') ? 'badge-cancelled' : 'badge-booked'">
-                        {{ p.status }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+          <!-- Passenger Table -->
+          <div style="margin-bottom: 20px;">
+            <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 10px;">Confirmed Passenger Roster</h4>
+            <table class="table" style="font-size: 0.875rem;">
+              <thead>
+                <tr style="background: var(--gray-100);">
+                  <th>#</th>
+                  <th>Seat No</th>
+                  <th>Passenger Name</th>
+                  <th>Age & Gender</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let p of printableBooking.passengers; let i = index">
+                  <td>{{ i + 1 }}</td>
+                  <td>
+                    <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; border: 1px solid #bae6fd;">
+                      💺 {{ p.seatNumber || ((i + 12) + 'A') }}
+                    </span>
+                  </td>
+                  <td><strong>{{ p.name }}</strong></td>
+                  <td>{{ p.age }} yrs ({{ p.gender }})</td>
+                  <td>
+                    <span class="badge" [ngClass]="(p.status === 'CANCELLED' || p.status === 'Cancelled') ? 'badge-cancelled' : 'badge-booked'">
+                      {{ p.status }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <!-- Payment Summary -->
           <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--gray-200); padding-top: 16px;">
@@ -270,7 +270,7 @@ import { LoginResponse } from '../../models/user.model';
           </div>
           <div style="font-size: 0.9rem; color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 4px;">
             <span>Calculated Carrier Refund Tier:</span>
-            <strong>80% Policy Refund</strong>
+            <strong>{{ getRefundPercentage() }}% Policy Refund</strong>
           </div>
           <div style="font-size: 1.15rem; font-weight: 900; color: var(--accent-emerald); display: flex; justify-content: space-between; margin-top: 8px; border-top: 1px solid rgba(2, 132, 199, 0.2); padding-top: 8px;">
             <span>Estimated Refund Credit:</span>
@@ -374,12 +374,24 @@ export class BookingListComponent implements OnInit {
     }
   }
 
+  getRefundPercentage(): number {
+    if (!this.activeBooking || !this.activeBooking.dateOfTravel) return 80;
+    const travelDate = new Date(this.activeBooking.dateOfTravel);
+    const today = new Date();
+    const diffDays = Math.ceil((travelDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
+
+    if (diffDays >= 20) return 80;
+    if (diffDays >= 2) return 50;
+    return 20;
+  }
+
   calculateEstimatedRefund(): number {
     if (!this.activeBooking || this.selectedPassengerIds.length === 0) return 0;
-    const netPaid = this.activeBooking.bookingAmount || this.activeBooking.grossAmount || 0;
+    const netPaid = this.activeBooking.netPayableAmount || this.activeBooking.bookingAmount || 0;
     const totalSeats = this.activeBooking.noOfSeats || 1;
     const perSeatFare = netPaid / totalSeats;
-    return perSeatFare * this.selectedPassengerIds.length * 0.8;
+    const pct = this.getRefundPercentage() / 100;
+    return perSeatFare * this.selectedPassengerIds.length * pct;
   }
 
   submitPartialCancellation(): void {

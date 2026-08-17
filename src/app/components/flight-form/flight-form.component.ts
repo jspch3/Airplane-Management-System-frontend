@@ -6,6 +6,7 @@ import { FlightService } from '../../services/flight.service';
 import { CarrierService } from '../../services/carrier.service';
 import { Carrier } from '../../models/carrier.model';
 import { Flight } from '../../models/flight.model';
+import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
 @Component({
   selector: 'app-flight-form',
@@ -15,18 +16,30 @@ import { Flight } from '../../models/flight.model';
     <div style="max-width: 920px; margin: 0 auto;">
       <div class="card">
         <div class="card-title">
-          <span>✈️ Flight Schedule & Fare Configuration [US005 / US007]</span>
+          <span>✈️ Flight Schedule & Fare Configuration</span>
         </div>
         <p class="card-subtitle">
-          Register & update flight routes, departure/arrival times, and individual seat class fares (Rupees &#8377;).
+          Register & update flight routes, departure/arrival times, schedule dates, and seat class fares (Rupees &#8377;).
         </p>
 
         <div *ngIf="successMsg" class="alert alert-success">
           ✅ {{ successMsg }}
         </div>
 
-        <div *ngIf="serverError" class="alert alert-danger">
-          ❌ {{ serverError }}
+        <div *ngIf="serverError || flightForm.errors" class="alert alert-danger">
+          <div *ngIf="serverError">❌ {{ serverError }}</div>
+          <div *ngIf="flightForm.errors?.['sameRoute']">
+            ⚠️ Origin and Destination cities must be different.
+          </div>
+          <div *ngIf="flightForm.errors?.['businessFareInvalid']">
+            ⚠️ Business Class Fare MUST be greater than Economy Class Fare.
+          </div>
+          <div *ngIf="flightForm.errors?.['executiveFareInvalid']">
+            ⚠️ Executive Class Fare MUST be greater than Business Class Fare.
+          </div>
+          <div *ngIf="flightForm.errors?.['capacityHierarchyInvalid']">
+            ⚠️ Seat Capacity Hierarchy Error: Economy Seats &gt; Business Seats &gt; Executive Seats is required.
+          </div>
         </div>
 
         <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">
@@ -47,14 +60,14 @@ import { Flight } from '../../models/flight.model';
           <!-- Dynamic Origin & Destination Cities Dropdowns -->
           <div class="grid-2">
             <div class="form-group">
-              <label class="form-label">Origin City <span class="required">*</span></label>
+              <label class="form-label">Origin Airport City <span class="required">*</span></label>
               <select formControlName="origin" (change)="onOriginChanged()" class="form-select" [ngClass]="{ 'is-invalid': isFieldInvalid('origin') }">
                 <option *ngFor="let city of originCities" [value]="city">{{ city }}</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Destination City <span class="required">*</span></label>
+              <label class="form-label">Destination Airport City <span class="required">*</span></label>
               <select formControlName="destination" (change)="onDestinationChanged()" class="form-select" [ngClass]="{ 'is-invalid': isFieldInvalid('destination') || flightForm.errors?.['sameRoute'] }">
                 <option *ngFor="let city of destinationCities" [value]="city">{{ city }}</option>
               </select>
@@ -64,42 +77,67 @@ import { Flight } from '../../models/flight.model';
             </div>
           </div>
 
-          <!-- Departure & Dynamic Calculated Arrival Times -->
-          <div class="section-divider">Flight Schedule & Timings</div>
+          <!-- Schedule Date & Timings -->
+          <div class="section-divider">Flight Schedule Date & Timings</div>
           <hr class="hr-rule" />
 
-          <div class="grid-2">
+          <div class="grid-3">
             <div class="form-group">
-              <label class="form-label">Departure Time <span class="required">*</span></label>
+              <label class="form-label">Schedule Date <span class="required">*</span></label>
               <input
-                type="text"
-                formControlName="departureTime"
-                (input)="calculateArrivalTime()"
+                type="date"
+                formControlName="scheduleDate"
+                [min]="todayDate"
                 class="form-control"
-                [ngClass]="{ 'is-invalid': isFieldInvalid('departureTime') }"
-                placeholder="e.g. 10:30 AM"
+                [ngClass]="{ 'is-invalid': isFieldInvalid('scheduleDate') }"
               />
-              <div *ngIf="isFieldInvalid('departureTime')" class="invalid-feedback">
-                Departure time is required.
+              <div *ngIf="isFieldInvalid('scheduleDate')" class="invalid-feedback">
+                Mandatory schedule date required (today or future date).
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Calculated Arrival Time (Auto) <span class="required">*</span></label>
-              <input
-                type="text"
-                formControlName="arrivalTime"
-                class="form-control"
-                [ngClass]="{ 'is-invalid': isFieldInvalid('arrivalTime') }"
-                placeholder="Auto calculated"
-              />
+              <label class="form-label">Departure Time <span class="required">*</span></label>
+              <div style="display: flex; gap: 8px;">
+                <input
+                  type="text"
+                  formControlName="departureTime"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': isFieldInvalid('departureTime') }"
+                  placeholder="e.g. 10:30"
+                />
+                <select formControlName="departurePeriod" class="form-select" style="width: 100px;">
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+              <div *ngIf="isFieldInvalid('departureTime')" class="invalid-feedback">
+                Departure time is required (hh:mm).
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Arrival Time <span class="required">*</span></label>
+              <div style="display: flex; gap: 8px;">
+                <input
+                  type="text"
+                  formControlName="arrivalTime"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': isFieldInvalid('arrivalTime') }"
+                  placeholder="e.g. 01:45"
+                />
+                <select formControlName="arrivalPeriod" class="form-select" style="width: 100px;">
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
               <div *ngIf="isFieldInvalid('arrivalTime')" class="invalid-feedback">
-                Arrival time is required.
+                Arrival time is required (hh:mm).
               </div>
             </div>
           </div>
 
-          <!-- Pricing / Class Fares Verification (Rupees ₹ strictly < 10 Lakhs) -->
+          <!-- Class Fares Verification (Rupees ₹ strictly < 10 Lakhs) -->
           <div class="section-divider">Class Fare Pricing (&#8377; INR: Max &#8377;9,99,999)</div>
           <hr class="hr-rule" />
 
@@ -111,13 +149,11 @@ import { Flight } from '../../models/flight.model';
                 formControlName="economyClassFare"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('economyClassFare') }"
-                placeholder="e.g. 28000"
+                placeholder="e.g. 5000"
                 min="1" max="999999"
               />
               <div *ngIf="isFieldInvalid('economyClassFare')" class="invalid-feedback">
-                <div *ngIf="f['economyClassFare'].errors?.['required']">Economy fare is required.</div>
-                <div *ngIf="f['economyClassFare'].errors?.['min']">Economy fare must be at least &#8377;1.</div>
-                <div *ngIf="f['economyClassFare'].errors?.['max']">Fare cannot exceed &#8377;9,99,999 (Less than 10 Lakhs).</div>
+                Economy fare must be between &#8377;1 and &#8377;9,99,999.
               </div>
             </div>
 
@@ -128,16 +164,11 @@ import { Flight } from '../../models/flight.model';
                 formControlName="businessClassFare"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('businessClassFare') || flightForm.errors?.['businessFareInvalid'] }"
-                placeholder="e.g. 55000"
+                placeholder="e.g. 10000"
                 min="1" max="999999"
               />
               <div *ngIf="isFieldInvalid('businessClassFare')" class="invalid-feedback">
-                <div *ngIf="f['businessClassFare'].errors?.['required']">Business fare is required.</div>
-                <div *ngIf="f['businessClassFare'].errors?.['min']">Business fare must be at least &#8377;1.</div>
-                <div *ngIf="f['businessClassFare'].errors?.['max']">Fare cannot exceed &#8377;9,99,999 (Less than 10 Lakhs).</div>
-              </div>
-              <div *ngIf="flightForm.errors?.['businessFareInvalid']" class="invalid-feedback">
-                Business Class Fare (&#8377;{{ flightForm.value.businessClassFare }}) MUST be greater than Economy Class Fare (&#8377;{{ flightForm.value.economyClassFare }}).
+                Business fare must be between &#8377;1 and &#8377;9,99,999.
               </div>
             </div>
 
@@ -148,64 +179,62 @@ import { Flight } from '../../models/flight.model';
                 formControlName="executiveClassFare"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('executiveClassFare') || flightForm.errors?.['executiveFareInvalid'] }"
-                placeholder="e.g. 95000"
+                placeholder="e.g. 15000"
                 min="1" max="999999"
               />
               <div *ngIf="isFieldInvalid('executiveClassFare')" class="invalid-feedback">
-                <div *ngIf="f['executiveClassFare'].errors?.['required']">Executive fare is required.</div>
-                <div *ngIf="f['executiveClassFare'].errors?.['min']">Executive fare must be at least &#8377;1.</div>
-                <div *ngIf="f['executiveClassFare'].errors?.['max']">Fare cannot exceed &#8377;9,99,999 (Less than 10 Lakhs).</div>
-              </div>
-              <div *ngIf="flightForm.errors?.['executiveFareInvalid']" class="invalid-feedback">
-                Executive Class Fare (&#8377;{{ flightForm.value.executiveClassFare }}) MUST be greater than Business Class Fare (&#8377;{{ flightForm.value.businessClassFare }}).
+                Executive fare must be between &#8377;1 and &#8377;9,99,999.
               </div>
             </div>
           </div>
 
-          <!-- Seat Capacity Inventory -->
-          <div class="section-divider">Seat Capacities Inventory</div>
+          <!-- Seat Capacity Inventory (Economy > Business > Executive, 1 to 1000) -->
+          <div class="section-divider">Seat Capacity Inventory (1 to 1000: Economy &gt; Business &gt; Executive)</div>
           <hr class="hr-rule" />
 
           <div class="grid-3">
             <div class="form-group">
-              <label class="form-label">Economy Class Seats <span class="required">*</span></label>
+              <label class="form-label">Economy Class Seats (1-1000) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="seatCapacityEconomyClass"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('seatCapacityEconomyClass') }"
                 placeholder="e.g. 150"
+                min="1" max="1000"
               />
               <div *ngIf="isFieldInvalid('seatCapacityEconomyClass')" class="invalid-feedback">
-                Capacity must be 0 or greater.
+                Capacity must be between 1 and 1000.
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Business Class Seats <span class="required">*</span></label>
+              <label class="form-label">Business Class Seats (1-1000) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="seatCapacityBusinessClass"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('seatCapacityBusinessClass') }"
                 placeholder="e.g. 30"
+                min="1" max="1000"
               />
               <div *ngIf="isFieldInvalid('seatCapacityBusinessClass')" class="invalid-feedback">
-                Capacity must be 0 or greater.
+                Capacity must be between 1 and 1000.
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Executive Class Seats <span class="required">*</span></label>
+              <label class="form-label">Executive Class Seats (1-1000) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="seatCapacityExecutiveClass"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('seatCapacityExecutiveClass') }"
-                placeholder="e.g. 12"
+                placeholder="e.g. 15"
+                min="1" max="1000"
               />
               <div *ngIf="isFieldInvalid('seatCapacityExecutiveClass')" class="invalid-feedback">
-                Capacity must be 0 or greater.
+                Capacity must be between 1 and 1000.
               </div>
             </div>
           </div>
@@ -233,23 +262,11 @@ export class FlightFormComponent implements OnInit {
   successMsg = '';
   serverError = '';
 
-  allCities = [
-    'Mumbai (BOM)',
-    'Delhi (DEL)',
-    'Bengaluru (BLR)',
-    'Hyderabad (HYD)',
-    'Vijayawada (VGA)',
-    'Visakhapatnam (VTZ)',
-    'Chennai (MAA)',
-    'Kolkata (CCU)',
-    'Dubai (DXB)',
-    'London (LHR)',
-    'New York (JFK)',
-    'Singapore (SIN)'
-  ];
-
+  allCities = MAJOR_AIRPORTS;
   originCities: string[] = [];
   destinationCities: string[] = [];
+
+  todayDate = new Date().toISOString().split('T')[0];
 
   constructor(
     private fb: FormBuilder,
@@ -263,17 +280,20 @@ export class FlightFormComponent implements OnInit {
       {
         carrierId: ['', [Validators.required]],
         origin: ['Mumbai (BOM)', [Validators.required]],
-        destination: ['Dubai (DXB)', [Validators.required]],
-        departureTime: ['10:30 AM', [Validators.required]],
-        arrivalTime: ['01:45 PM', [Validators.required]],
-        economyClassFare: [28000, [Validators.required, Validators.min(1), Validators.max(999999)]],
-        businessClassFare: [55000, [Validators.required, Validators.min(1), Validators.max(999999)]],
-        executiveClassFare: [95000, [Validators.required, Validators.min(1), Validators.max(999999)]],
-        seatCapacityEconomyClass: [150, [Validators.required, Validators.min(0)]],
-        seatCapacityBusinessClass: [30, [Validators.required, Validators.min(0)]],
-        seatCapacityExecutiveClass: [12, [Validators.required, Validators.min(0)]]
+        destination: ['Delhi (DEL)', [Validators.required]],
+        scheduleDate: [this.todayDate, [Validators.required]],
+        departureTime: ['10:30', [Validators.required, Validators.pattern(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/)]],
+        departurePeriod: ['AM', [Validators.required]],
+        arrivalTime: ['01:45', [Validators.required, Validators.pattern(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/)]],
+        arrivalPeriod: ['PM', [Validators.required]],
+        economyClassFare: [5000, [Validators.required, Validators.min(1), Validators.max(999999)]],
+        businessClassFare: [10000, [Validators.required, Validators.min(1), Validators.max(999999)]],
+        executiveClassFare: [15000, [Validators.required, Validators.min(1), Validators.max(999999)]],
+        seatCapacityEconomyClass: [150, [Validators.required, Validators.min(1), Validators.max(1000)]],
+        seatCapacityBusinessClass: [30, [Validators.required, Validators.min(1), Validators.max(1000)]],
+        seatCapacityExecutiveClass: [15, [Validators.required, Validators.min(1), Validators.max(1000)]]
       },
-      { validators: [this.originDestinationValidator, this.fareVerificationValidator] }
+      { validators: [this.originDestinationValidator, this.fareVerificationValidator, this.capacityHierarchyValidator] }
     );
 
     this.updateCityLists();
@@ -296,7 +316,25 @@ export class FlightFormComponent implements OnInit {
       this.isEditMode = true;
       this.flightId = +paramId;
       this.flightService.getFlightById(this.flightId).subscribe(f => {
-        this.flightForm.patchValue(f);
+        let depTime = f.departureTime || '10:30 AM';
+        let arrTime = f.arrivalTime || '01:45 PM';
+
+        let depP = 'AM';
+        let arrP = 'PM';
+
+        if (depTime.includes('PM')) { depP = 'PM'; depTime = depTime.replace('PM', '').trim(); }
+        else if (depTime.includes('AM')) { depP = 'AM'; depTime = depTime.replace('AM', '').trim(); }
+
+        if (arrTime.includes('PM')) { arrP = 'PM'; arrTime = arrTime.replace('PM', '').trim(); }
+        else if (arrTime.includes('AM')) { arrP = 'AM'; arrTime = arrTime.replace('AM', '').trim(); }
+
+        this.flightForm.patchValue({
+          ...f,
+          departureTime: depTime,
+          departurePeriod: depP,
+          arrivalTime: arrTime,
+          arrivalPeriod: arrP
+        });
         this.updateCityLists();
       });
     }
@@ -317,7 +355,6 @@ export class FlightFormComponent implements OnInit {
         this.flightForm.patchValue({ destination: this.destinationCities[0] });
       }
     }
-    this.calculateArrivalTime();
   }
 
   onDestinationChanged(): void {
@@ -327,30 +364,6 @@ export class FlightFormComponent implements OnInit {
         this.flightForm.patchValue({ origin: this.originCities[0] });
       }
     }
-    this.calculateArrivalTime();
-  }
-
-  calculateArrivalTime(): void {
-    const depTime = this.flightForm.value.departureTime;
-    if (!depTime) return;
-
-    const origin = this.flightForm.value.origin || '';
-    const dest = this.flightForm.value.destination || '';
-
-    let durationHours = 3;
-    let durationMinutes = 15;
-
-    if (origin.includes('VGA') || origin.includes('VTZ') || dest.includes('VGA') || dest.includes('VTZ')) {
-      durationHours = 1; durationMinutes = 45;
-    } else if (origin.includes('BOM') && dest.includes('DXB')) {
-      durationHours = 3; durationMinutes = 15;
-    } else if (origin.includes('DEL') && dest.includes('BLR')) {
-      durationHours = 2; durationMinutes = 45;
-    } else if (dest.includes('LHR') || dest.includes('JFK')) {
-      durationHours = 9; durationMinutes = 30;
-    }
-
-    this.flightForm.patchValue({ arrivalTime: `Dep + ${durationHours}h ${durationMinutes}m` }, { emitEvent: false });
   }
 
   goBack(): void {
@@ -383,6 +396,17 @@ export class FlightFormComponent implements OnInit {
     return Object.keys(errors).length > 0 ? errors : null;
   }
 
+  capacityHierarchyValidator(control: AbstractControl): ValidationErrors | null {
+    const eco = Number(control.get('seatCapacityEconomyClass')?.value) || 0;
+    const bus = Number(control.get('seatCapacityBusinessClass')?.value) || 0;
+    const exe = Number(control.get('seatCapacityExecutiveClass')?.value) || 0;
+
+    if (eco <= bus || bus <= exe) {
+      return { capacityHierarchyInvalid: true };
+    }
+    return null;
+  }
+
   isFieldInvalid(field: string): boolean {
     const control = this.flightForm.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));
@@ -402,13 +426,16 @@ export class FlightFormComponent implements OnInit {
     const selectedCarrier = this.carriers.find(c => c.carrierId == formVal.carrierId);
     const carrierName = selectedCarrier ? selectedCarrier.carrierName : '';
 
+    const formattedDepTime = `${formVal.departureTime.trim()} ${formVal.departurePeriod}`;
+    const formattedArrTime = `${formVal.arrivalTime.trim()} ${formVal.arrivalPeriod}`;
+
     const flightData: Flight = {
       carrierId: +formVal.carrierId,
       carrierName: carrierName,
       origin: formVal.origin,
       destination: formVal.destination,
-      departureTime: formVal.departureTime.trim(),
-      arrivalTime: formVal.arrivalTime.trim(),
+      departureTime: formattedDepTime,
+      arrivalTime: formattedArrTime,
       airFare: Number(formVal.economyClassFare),
       economyClassFare: Number(formVal.economyClassFare),
       businessClassFare: Number(formVal.businessClassFare),

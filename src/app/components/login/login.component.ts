@@ -1,13 +1,13 @@
 import { Component } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   template: `
     <div style="max-width: 480px; margin: 40px auto;">
       <div class="card" style="box-shadow: 0 20px 40px -15px rgba(15, 23, 42, 0.12);">
@@ -41,7 +41,12 @@ import { AuthService } from '../../services/auth.service';
 
           <!-- Password Input (Renders completely blank) -->
           <div class="form-group">
-            <label class="form-label">Password <span class="required">*</span></label>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label class="form-label">Password <span class="required">*</span></label>
+              <button type="button" (click)="openForgotPasswordModal()" style="background: none; border: none; color: var(--primary-blue); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0;">
+                Forgot Password?
+              </button>
+            </div>
             <input
               type="password"
               formControlName="password"
@@ -52,7 +57,6 @@ import { AuthService } from '../../services/auth.service';
             <div *ngIf="isFieldInvalid('password')" class="invalid-feedback">
               Password is required.
             </div>
-            <!-- Credential error directly below password box -->
             <div *ngIf="loginError" class="invalid-feedback">
               {{ loginError }}
             </div>
@@ -80,6 +84,99 @@ import { AuthService } from '../../services/auth.service';
         </button>
       </div>
     </div>
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div *ngIf="showForgotModal" class="modal-backdrop" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.65); display: flex; align-items: center; justify-content: center; z-index: 1050; padding: 16px;">
+      <div class="card" style="width: 100%; max-width: 440px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--primary-navy); margin: 0;">
+            🔒 Forgot Password Reset
+          </h3>
+          <button (click)="closeForgotPasswordModal()" style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+        </div>
+
+        <div *ngIf="forgotError" class="alert alert-danger" style="font-size: 0.875rem; margin-bottom: 16px;">
+          ❌ {{ forgotError }}
+        </div>
+
+        <div *ngIf="forgotSuccess" class="alert alert-success" style="font-size: 0.875rem; margin-bottom: 16px;">
+          ✅ {{ forgotSuccess }}
+        </div>
+
+        <!-- STEP 1: Enter Username or Email -->
+        <div *ngIf="forgotStep === 1">
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px;">
+            Enter your registered Username or Email ID to initiate security verification.
+          </p>
+          <div class="form-group">
+            <label class="form-label">Username or Email <span class="required">*</span></label>
+            <input
+              type="text"
+              [(ngModel)]="forgotIdentity"
+              class="form-control"
+              placeholder="e.g. sarah123 or sarah@gmail.com"
+            />
+          </div>
+          <button (click)="onFindMaskedPhone()" class="btn btn-primary" style="width: 100%; margin-top: 12px;" [disabled]="forgotLoading">
+            {{ forgotLoading ? 'Verifying Identity...' : 'Find Registered Phone' }}
+          </button>
+        </div>
+
+        <!-- STEP 2: Mobile Number Match Verification -->
+        <div *ngIf="forgotStep === 2">
+          <div style="background: #e0f2fe; padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid #bae6fd;">
+            <span style="font-size: 0.85rem; color: #0369a1; font-weight: 600;">
+              Account: <strong>{{ foundUserName }}</strong><br/>
+              Registered Phone: <strong>{{ maskedPhone }}</strong>
+            </span>
+          </div>
+          <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 12px;">
+            Enter your full 10-digit mobile number to verify account ownership.
+          </p>
+          <div class="form-group">
+            <label class="form-label">Full Mobile Number <span class="required">*</span></label>
+            <input
+              type="tel"
+              inputmode="numeric"
+              [(ngModel)]="fullMobileInput"
+              class="form-control"
+              placeholder="10 digits (e.g. 9876543210)"
+            />
+          </div>
+          <button (click)="onVerifyMobile()" class="btn btn-primary" style="width: 100%; margin-top: 12px;" [disabled]="forgotLoading">
+            {{ forgotLoading ? 'Verifying Mobile...' : 'Verify Mobile Number' }}
+          </button>
+        </div>
+
+        <!-- STEP 3: Reset Password Fields -->
+        <div *ngIf="forgotStep === 3">
+          <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 16px;">
+            Mobile verified! Create a new password for account <strong>{{ foundUserName }}</strong>.
+          </p>
+          <div class="form-group">
+            <label class="form-label">New Password <span class="required">*</span></label>
+            <input
+              type="password"
+              [(ngModel)]="newPasswordInput"
+              class="form-control"
+              placeholder="At least 6 characters"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm New Password <span class="required">*</span></label>
+            <input
+              type="password"
+              [(ngModel)]="confirmNewPasswordInput"
+              class="form-control"
+              placeholder="Re-enter new password"
+            />
+          </div>
+          <button (click)="onResetPasswordSubmit()" class="btn btn-primary" style="width: 100%; margin-top: 12px;" [disabled]="forgotLoading">
+            {{ forgotLoading ? 'Updating Password...' : 'Reset Password' }}
+          </button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class LoginComponent {
@@ -87,13 +184,25 @@ export class LoginComponent {
   isSubmitting = false;
   loginError = '';
 
+  // Forgot password modal state
+  showForgotModal = false;
+  forgotStep = 1;
+  forgotIdentity = '';
+  foundUserName = '';
+  maskedPhone = '';
+  fullMobileInput = '';
+  newPasswordInput = '';
+  confirmNewPasswordInput = '';
+  forgotLoading = false;
+  forgotError = '';
+  forgotSuccess = '';
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
     private location: Location
   ) {
-    // Completely blank login inputs
     this.loginForm = this.fb.group({
       userName: ['', [Validators.required]],
       password: ['', [Validators.required]]
@@ -107,6 +216,91 @@ export class LoginComponent {
   isFieldInvalid(field: string): boolean {
     const control = this.loginForm.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));
+  }
+
+  openForgotPasswordModal(): void {
+    this.showForgotModal = true;
+    this.forgotStep = 1;
+    this.forgotIdentity = '';
+    this.foundUserName = '';
+    this.maskedPhone = '';
+    this.fullMobileInput = '';
+    this.newPasswordInput = '';
+    this.confirmNewPasswordInput = '';
+    this.forgotError = '';
+    this.forgotSuccess = '';
+  }
+
+  closeForgotPasswordModal(): void {
+    this.showForgotModal = false;
+  }
+
+  onFindMaskedPhone(): void {
+    this.forgotError = '';
+    if (!this.forgotIdentity.trim()) {
+      this.forgotError = 'Please enter your registered Username or Email ID.';
+      return;
+    }
+    this.forgotLoading = true;
+    this.authService.getMaskedPhone(this.forgotIdentity.trim()).subscribe({
+      next: (res) => {
+        this.forgotLoading = false;
+        this.foundUserName = res.userName;
+        this.maskedPhone = res.maskedPhone;
+        this.forgotStep = 2;
+      },
+      error: (err) => {
+        this.forgotLoading = false;
+        this.forgotError = err.error?.message || 'No registered account found with that identity.';
+      }
+    });
+  }
+
+  onVerifyMobile(): void {
+    this.forgotError = '';
+    if (!this.fullMobileInput.trim()) {
+      this.forgotError = 'Please enter your 10-digit registered mobile number.';
+      return;
+    }
+    this.forgotLoading = true;
+    this.authService.verifyMobile(this.foundUserName, this.fullMobileInput.trim()).subscribe({
+      next: () => {
+        this.forgotLoading = false;
+        this.forgotStep = 3;
+      },
+      error: (err) => {
+        this.forgotLoading = false;
+        // Exact requirement: "Mobile number not matched"
+        this.forgotError = err.error?.message || 'Mobile number not matched';
+      }
+    });
+  }
+
+  onResetPasswordSubmit(): void {
+    this.forgotError = '';
+    if (!this.newPasswordInput || this.newPasswordInput.length < 6) {
+      this.forgotError = 'New password must be at least 6 characters long.';
+      return;
+    }
+    if (this.newPasswordInput !== this.confirmNewPasswordInput) {
+      this.forgotError = 'Passwords do not match.';
+      return;
+    }
+
+    this.forgotLoading = true;
+    this.authService.resetPassword(this.foundUserName, this.fullMobileInput.trim(), this.newPasswordInput).subscribe({
+      next: () => {
+        this.forgotLoading = false;
+        this.forgotSuccess = 'Password reset successfully! You can now sign in with your new password.';
+        setTimeout(() => {
+          this.closeForgotPasswordModal();
+        }, 2000);
+      },
+      error: (err) => {
+        this.forgotLoading = false;
+        this.forgotError = err.error?.message || 'Password reset failed. Please try again.';
+      }
+    });
   }
 
   onSubmit(): void {

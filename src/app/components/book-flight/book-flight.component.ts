@@ -24,7 +24,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
           </div>
         </div>
         <p class="card-subtitle">
-          Select travel date & number of seats. Fill in mandatory passenger details (&ge; 18 years). All fares in Indian Rupees (&#8377;).
+          Select travel date & number of seats. Fill in mandatory passenger details (all ages 0-120). All fares in Indian Rupees (&#8377;).
         </p>
 
         <div *ngIf="bookingError" class="alert alert-danger">
@@ -91,7 +91,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
 
           <!-- Dynamic Multi-Passenger Cards for N Seats -->
           <div class="section-divider" style="font-weight: 800; color: var(--primary-navy); margin: 24px 0 12px 0;">
-            👥 Dynamic Passenger Details (Mandatory: Name, Age &ge; 18, Gender; Optional: Email, Phone)
+            👥 Dynamic Passenger Details (Mandatory: Name, Age 0-120, Gender; Optional: Email, Phone)
           </div>
           <hr class="hr-rule" style="margin-bottom: 20px;" />
 
@@ -117,17 +117,17 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 </div>
 
                 <div class="form-group">
-                  <label class="form-label">Age (&ge; 18 yrs) <span class="required">*</span></label>
+                  <label class="form-label">Age (0-120 yrs) <span class="required">*</span></label>
                   <input
                     type="number"
                     formControlName="age"
                     class="form-control"
                     [ngClass]="{ 'is-invalid': isPassengerFieldInvalid(i, 'age') }"
-                    placeholder="Age (18-120)"
-                    min="18" max="120"
+                    placeholder="Age (0-120)"
+                    min="0" max="120"
                   />
                   <div *ngIf="isPassengerFieldInvalid(i, 'age')" class="invalid-feedback">
-                    Age must be between 18 and 120.
+                    Age must be between 0 and 120.
                   </div>
                 </div>
 
@@ -683,7 +683,7 @@ export class BookFlightComponent implements OnInit {
   createPassengerGroup(): FormGroup {
     return this.fb.group({
       name: ['', [Validators.required, Validators.pattern(/^[a-zA-Z]+( [a-zA-Z]+)*$/)]],
-      age: [25, [Validators.required, Validators.min(18), Validators.max(120)]],
+      age: [25, [Validators.required, Validators.min(0), Validators.max(120)]],
       gender: ['Male', [Validators.required]],
       email: ['', [Validators.pattern(/^$|^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)]],
       phone: ['', [Validators.pattern(/^$|^[6-9][0-9]{9}$/)]]

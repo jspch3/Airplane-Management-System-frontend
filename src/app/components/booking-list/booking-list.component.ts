@@ -41,7 +41,8 @@ import { LoginResponse } from '../../models/user.model';
                 <th>Booking ID</th>
                 <th>Flight & Route</th>
                 <th>Departure & Arrival Timings</th>
-                <th>User ID</th>
+                <th *ngIf="user && user.role === 'ADMIN'">User ID</th>
+                <th *ngIf="user && user.role === 'CUSTOMER'">Customer Username</th>
                 <th>Travel Date</th>
                 <th>Seats & Class</th>
                 <th>Net Paid (&#8377;)</th>
@@ -63,10 +64,17 @@ import { LoginResponse } from '../../models/user.model';
                     🛬 Arr: {{ b.arrivalTime || '01:45 PM' }}
                   </div>
                 </td>
-                <!-- Strictly ONLY User ID rendered for both Admin & Customer views -->
-                <td>
-                  <div style="font-weight: 800; color: var(--primary-navy);">👤 User ID: #{{ b.userId }}</div>
+                
+                <!-- Admin View: Displays ONLY User ID -->
+                <td *ngIf="user && user.role === 'ADMIN'">
+                  <div style="font-weight: 800; color: var(--primary-navy);">User ID: #{{ b.userId }}</div>
                 </td>
+
+                <!-- Customer View: Displays Username -->
+                <td *ngIf="user && user.role === 'CUSTOMER'">
+                  <div style="font-weight: 800; color: var(--primary-navy);">👤 {{ b.userName }}</div>
+                </td>
+
                 <td>{{ b.dateOfTravel }}</td>
                 <td>
                   <div>{{ b.noOfSeats }} seats</div>
@@ -156,7 +164,7 @@ import { LoginResponse } from '../../models/user.model';
               <div style="font-size: 1.25rem; font-weight: 900; color: var(--primary-navy);">{{ printableBooking.flightName }}</div>
               <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-blue);">Booking ID: #{{ printableBooking.bookingId }}</div>
               <div style="font-size: 0.85rem; color: var(--gray-800); margin-top: 4px;">
-                User ID: <strong>👤 #{{ printableBooking.userId }}</strong>
+                Customer: <strong>👤 {{ printableBooking.userName }}</strong> (User ID: #{{ printableBooking.userId }})
               </div>
             </div>
 

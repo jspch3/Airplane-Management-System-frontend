@@ -322,7 +322,7 @@ export class RegisterComponent implements OnInit {
         role: ['CUSTOMER', [Validators.required]],
         customerCategory: ['REGULAR', [Validators.required]],
         phone: ['', [Validators.required, Validators.pattern(/^[6-9][0-9]{9}$/)]],
-        emailPrefix: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._%+-]+$/)]],
+        emailPrefix: ['', [Validators.required, Validators.pattern(/^[a-zA-Z][a-zA-Z0-9._%+-]*$/)]],
         emailDomain: ['gmail.com', [Validators.required]],
         address1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(100)]],
         address2: ['', [Validators.maxLength(100)]],

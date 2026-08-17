@@ -41,7 +41,7 @@ import { LoginResponse } from '../../models/user.model';
                 <th>Booking ID</th>
                 <th>Flight & Route</th>
                 <th>Departure & Arrival Timings</th>
-                <th>Customer Name</th>
+                <th>Customer Full Details</th>
                 <th>Travel Date</th>
                 <th>Seats & Class</th>
                 <th>Net Paid (&#8377;)</th>
@@ -63,7 +63,15 @@ import { LoginResponse } from '../../models/user.model';
                     🛬 Arr: {{ b.arrivalTime || '01:45 PM' }}
                   </div>
                 </td>
-                <td><strong>👤 {{ b.userName }}</strong></td>
+                <!-- Full Customer Details View for Admin and Users -->
+                <td>
+                  <div style="font-weight: 800; color: var(--primary-navy);">👤 {{ b.userName }}</div>
+                  <div style="font-size: 0.8rem; color: #0284c7;">📧 {{ b.userEmail || (b.userName + '@ams.com') }}</div>
+                  <div style="font-size: 0.8rem; color: var(--gray-600);">📱 {{ b.userPhone || '9876543210' }}</div>
+                  <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">
+                    ⭐ {{ b.customerCategory || 'REGULAR' }}
+                  </span>
+                </td>
                 <td>{{ b.dateOfTravel }}</td>
                 <td>
                   <div>{{ b.noOfSeats }} seats</div>
@@ -91,13 +99,15 @@ import { LoginResponse } from '../../models/user.model';
                     <button (click)="printTicket(b)" class="btn btn-primary btn-sm" style="padding: 6px 10px; font-size: 0.8rem;">
                       🖨️ Print Ticket
                     </button>
+
+                    <!-- Customer Only Cancellation Button (Admin Deletion/Cancellation Removed) -->
                     <button
-                      *ngIf="b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled'"
+                      *ngIf="user && user.role === 'CUSTOMER' && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled'"
                       (click)="openCancelModal(b)"
                       class="btn btn-danger btn-sm"
                       style="padding: 6px 10px; font-size: 0.8rem;"
                     >
-                      🚫 Cancel
+                      🚫 Cancel Ticket
                     </button>
                   </div>
                 </td>
@@ -142,7 +152,9 @@ import { LoginResponse } from '../../models/user.model';
               <div style="font-size: 0.75rem; font-weight: 800; color: var(--gray-600); text-transform: uppercase;">Flight Carrier & Route</div>
               <div style="font-size: 1.25rem; font-weight: 900; color: var(--primary-navy);">{{ printableBooking.flightName }}</div>
               <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-blue);">Booking ID: #{{ printableBooking.bookingId }}</div>
-              <div style="font-size: 0.85rem; color: var(--gray-800); margin-top: 4px;">Primary Account: <strong>👤 {{ printableBooking.userName }}</strong></div>
+              <div style="font-size: 0.85rem; color: var(--gray-800); margin-top: 4px;">
+                Customer: <strong>👤 {{ printableBooking.userName }}</strong> (📧 {{ printableBooking.userEmail || (printableBooking.userName + '@ams.com') }})
+              </div>
             </div>
 
             <div style="text-align: right;">

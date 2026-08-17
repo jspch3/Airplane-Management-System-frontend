@@ -233,7 +233,7 @@ export class ProfileComponent implements OnInit {
       userName: [{ value: '', disabled: true }],
       role: [{ value: '', disabled: true }],
       customerCategory: ['REGULAR'],
-      emailId: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)]],
+      emailId: ['', [Validators.required, Validators.pattern(/^[a-zA-Z][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)]],
       phone: ['', [Validators.required, Validators.pattern(/^[6-9][0-9]{9}$/)]],
       address1: ['', [Validators.required, Validators.minLength(5), Validators.maxLength(100)]],
       address2: ['', [Validators.maxLength(100)]],
@@ -247,6 +247,10 @@ export class ProfileComponent implements OnInit {
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(u => {
       this.currentUser = u;
+      if (u?.role === 'ADMIN') {
+        this.router.navigate(['/admin/dashboard']);
+        return;
+      }
       if (u?.userId) {
         this.authService.getUserById(u.userId).subscribe(user => {
           this.userProfile = user;

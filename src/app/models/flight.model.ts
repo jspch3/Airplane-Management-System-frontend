@@ -4,6 +4,7 @@ export interface Flight {
   carrierName: string;
   origin: string;
   destination: string;
+  scheduleDate?: string;
   departureTime: string;
   arrivalTime: string;
   airFare: number;

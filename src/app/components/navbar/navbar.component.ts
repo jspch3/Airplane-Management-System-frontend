@@ -57,15 +57,14 @@ import { LoginResponse } from '../../models/user.model';
               </a>
             </li>
 
-            <!-- Customer sees 'My Bookings', Admin sees 'Bookings' -->
             <li *ngIf="user">
               <a routerLink="/bookings" routerLinkActive="active-nav" style="color: #94a3b8; text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 8px 14px; border-radius: 20px; transition: all 0.2s ease;">
-                📋 {{ user.role === 'ADMIN' ? 'Bookings' : 'My Bookings' }}
+                📋 {{ user.role === 'ADMIN' ? 'All Bookings' : 'My Bookings' }}
               </a>
             </li>
 
-            <!-- Profile Page Link -->
-            <li *ngIf="user">
+            <!-- Profile Page Link (Strictly Customer Only - Admin profile links removed) -->
+            <li *ngIf="user && user.role === 'CUSTOMER'">
               <a routerLink="/profile" routerLinkActive="active-nav" style="color: #94a3b8; text-decoration: none; font-weight: 600; font-size: 0.9rem; padding: 8px 14px; border-radius: 20px; transition: all 0.2s ease;">
                 👤 Profile
               </a>
@@ -84,8 +83,8 @@ import { LoginResponse } from '../../models/user.model';
               </a>
             </li>
 
-            <!-- User Avatar Chip Linking to /profile -->
-            <li *ngIf="user">
+            <!-- Customer User Avatar Chip Linking to /profile -->
+            <li *ngIf="user && user.role === 'CUSTOMER'">
               <a routerLink="/profile" style="display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.08); padding: 6px 14px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.15); text-decoration: none;">
                 <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #6366f1); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: #ffffff;">
                   {{ user.userName.substring(0, 1).toUpperCase() }}
@@ -93,10 +92,28 @@ import { LoginResponse } from '../../models/user.model';
                 <div style="display: flex; flex-direction: column;">
                   <span style="font-size: 0.85rem; font-weight: 700; color: #ffffff; line-height: 1.2;">{{ user.userName }}</span>
                   <span style="font-size: 0.7rem; font-weight: 800; color: #06b6d4; text-transform: uppercase; letter-spacing: 0.5px;">
-                    {{ user.role === 'ADMIN' ? 'ADMINISTRATOR' : (user.customerCategory || 'MEMBER') }}
+                    {{ user.customerCategory || 'MEMBER' }}
                   </span>
                 </div>
               </a>
+            </li>
+
+            <!-- Admin Menu: Strictly User Chip + Sign Out Only -->
+            <li *ngIf="user && user.role === 'ADMIN'" style="display: flex; align-items: center; gap: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px; background: rgba(2, 132, 199, 0.2); padding: 6px 14px; border-radius: 30px; border: 1px solid rgba(2, 132, 199, 0.4);">
+                <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #0369a1); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: #ffffff;">
+                  🛡️
+                </div>
+                <div style="display: flex; flex-direction: column;">
+                  <span style="font-size: 0.85rem; font-weight: 700; color: #ffffff; line-height: 1.2;">{{ user.userName }}</span>
+                  <span style="font-size: 0.7rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px;">SYSTEM ADMIN</span>
+                </div>
+              </div>
+
+              <!-- Admin Menu Action: Strictly Sign Out -->
+              <button (click)="logout()" class="btn btn-outline" style="border-color: #ef4444; color: #f87171; font-size: 0.85rem; padding: 6px 14px; font-weight: 700;">
+                🚪 Sign Out
+              </button>
             </li>
           </ul>
         </nav>
@@ -118,5 +135,10 @@ export class NavbarComponent implements OnInit {
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(u => this.user = u);
+  }
+
+  logout(): void {
+    this.authService.logout();
+    this.router.navigate(['/login']);
   }
 }

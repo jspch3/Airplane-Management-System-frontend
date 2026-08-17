@@ -27,6 +27,9 @@ export interface Booking {
   bookingId: number;
   userId: number;
   userName: string;
+  userEmail?: string;
+  userPhone?: string;
+  customerCategory?: string;
   flightId: number;
   flightName: string;
   origin?: string;

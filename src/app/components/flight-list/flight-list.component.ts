@@ -40,20 +40,30 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           ✅ {{ actionMsg }}
         </div>
 
-        <div *ngIf="actionError" class="alert alert-danger">
+        <div *ngIf="actionError" class="alert alert-danger" style="font-weight: 800; font-size: 1rem; padding: 16px;">
           ❌ {{ actionError }}
         </div>
 
-        <!-- Carrier & Route Filters -->
-        <div class="grid-3" style="margin-bottom: 24px;">
+        <!-- Carrier, Date & Route Filters -->
+        <div class="grid-4" style="margin-bottom: 24px;">
           <div class="form-group" style="margin-bottom: 0;">
-            <label class="form-label">🔍 Live Search by Carrier Name</label>
+            <label class="form-label">🔍 Live Search by Carrier</label>
             <input
               type="text"
               [(ngModel)]="searchCarrierName"
               (input)="applyFilters()"
               class="form-control"
               placeholder="e.g. Indigo or Air India"
+            />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label class="form-label">📅 Exact Travel Date</label>
+            <input
+              type="date"
+              [(ngModel)]="searchScheduleDate"
+              (change)="applyFilters()"
+              class="form-control"
             />
           </div>
 
@@ -90,7 +100,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 <th>Flight ID</th>
                 <th>Carrier Name</th>
                 <th>Route (Origin &rarr; Dest)</th>
-                <th>Timings (Dep &rarr; Arr)</th>
+                <th>Schedule Date & Timings</th>
                 <th>Class Fares (&#8377; INR)</th>
                 <th>Seat Availability</th>
                 <th>Action</th>
@@ -107,8 +117,8 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 </td>
                 <td>
                   <div style="font-size: 0.85rem; color: var(--gray-800);">
-                    🕒 Dep: <strong>{{ f.departureTime || '10:30 AM' }}</strong><br/>
-                    🛬 Arr: <strong>{{ f.arrivalTime || '01:45 PM' }}</strong>
+                    📅 Date: <strong>{{ f.scheduleDate || 'Daily' }}</strong><br/>
+                    🕒 Dep: <strong>{{ f.departureTime || '10:30 AM' }}</strong> | 🛬 Arr: <strong>{{ f.arrivalTime || '01:45 PM' }}</strong>
                   </div>
                 </td>
                 <td>
@@ -130,7 +140,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                     <a
                       *ngIf="user && user.role === 'CUSTOMER'"
                       [routerLink]="['/book-flight']"
-                      [queryParams]="{ flightId: f.flightId }"
+                      [queryParams]="{ flightId: f.flightId, date: f.scheduleDate }"
                       class="btn btn-primary"
                       style="padding: 6px 12px; font-size: 0.825rem;"
                     >
@@ -178,20 +188,20 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
         </div>
 
         <div class="alert alert-danger" style="margin-bottom: 20px;">
-          <strong>Warning:</strong> You are about to permanently remove Flight <strong>#AMS-{{ flightToDelete.flightId }}</strong> from the schedule inventory.
+          <strong>Warning:</strong> You are about to remove Flight <strong>#AMS-{{ flightToDelete.flightId }}</strong> from system inventory.
         </div>
 
         <div style="background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: 12px; padding: 18px; margin-bottom: 24px;">
           <div style="font-size: 0.9rem; margin-bottom: 6px;">Carrier: <strong>{{ flightToDelete.carrierName }}</strong></div>
           <div style="font-size: 0.9rem; margin-bottom: 6px;">Route: <strong>{{ flightToDelete.origin }} &rarr; {{ flightToDelete.destination }}</strong></div>
-          <div style="font-size: 0.85rem; color: var(--text-muted);">Dep Time: {{ flightToDelete.departureTime }} | Arr Time: {{ flightToDelete.arrivalTime }}</div>
+          <div style="font-size: 0.85rem; color: var(--text-muted);">Schedule: {{ flightToDelete.scheduleDate || 'Daily' }} | Dep: {{ flightToDelete.departureTime }}</div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 12px;">
           <button (click)="closeDeleteModal()" class="btn btn-outline">Cancel</button>
           <button (click)="executeDeleteFlight()" class="btn btn-danger" [disabled]="isDeleting">
             <span *ngIf="isDeleting">Deleting Flight...</span>
-            <span *ngIf="!isDeleting">🗑️ Yes, Permanently Delete Flight</span>
+            <span *ngIf="!isDeleting">🗑️ Yes, Delete Flight</span>
           </button>
         </div>
       </div>
@@ -203,6 +213,7 @@ export class FlightListComponent implements OnInit {
   filteredFlights: Flight[] = [];
 
   searchCarrierName = '';
+  searchScheduleDate = '';
   searchOrigin = '';
   searchDestination = '';
 
@@ -249,9 +260,12 @@ export class FlightListComponent implements OnInit {
     this.filteredFlights = this.flights.filter(f => {
       const matchCarrier = !this.searchCarrierName.trim() ||
         f.carrierName.toLowerCase().includes(this.searchCarrierName.trim().toLowerCase());
+
+      const matchDate = !this.searchScheduleDate || f.scheduleDate === this.searchScheduleDate;
       const matchOrigin = !this.searchOrigin || f.origin === this.searchOrigin;
       const matchDest = !this.searchDestination || f.destination === this.searchDestination;
-      return matchCarrier && matchOrigin && matchDest;
+
+      return matchCarrier && matchDate && matchOrigin && matchDest;
     });
   }
 
@@ -283,7 +297,12 @@ export class FlightListComponent implements OnInit {
       },
       error: (err: any) => {
         this.isDeleting = false;
-        this.actionError = err.error?.message || `Failed to delete Flight #AMS-${id}.`;
+        const msg = err.error?.message || err.message || '';
+        if (msg.includes("active users") || msg.includes("active") || msg.includes("500") || msg.includes("Internal")) {
+          this.actionError = "We can't delete the flight, it has active users.";
+        } else {
+          this.actionError = msg || "We can't delete the flight, it has active users.";
+        }
         this.closeDeleteModal();
       }
     });

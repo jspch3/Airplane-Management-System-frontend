@@ -40,6 +40,9 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           <div *ngIf="flightForm.errors?.['capacityHierarchyInvalid']">
             ⚠️ Seat Capacity Hierarchy Error: Economy Seats &gt; Business Seats &gt; Executive Seats is required.
           </div>
+          <div *ngIf="flightForm.errors?.['pastDepartureTime']">
+            ⚠️ Departure time cannot be earlier than current local time for today's flight schedule.
+          </div>
         </div>
 
         <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">
@@ -61,14 +64,14 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           <div class="grid-2">
             <div class="form-group">
               <label class="form-label">Origin Airport City <span class="required">*</span></label>
-              <select formControlName="origin" (change)="onOriginChanged()" class="form-select" [ngClass]="{ 'is-invalid': isFieldInvalid('origin') }">
+              <select formControlName="origin" (change)="onRouteOrTimeChanged()" class="form-select" [ngClass]="{ 'is-invalid': isFieldInvalid('origin') }">
                 <option *ngFor="let city of originCities" [value]="city">{{ city }}</option>
               </select>
             </div>
 
             <div class="form-group">
               <label class="form-label">Destination Airport City <span class="required">*</span></label>
-              <select formControlName="destination" (change)="onDestinationChanged()" class="form-select" [ngClass]="{ 'is-invalid': isFieldInvalid('destination') || flightForm.errors?.['sameRoute'] }">
+              <select formControlName="destination" (change)="onRouteOrTimeChanged()" class="form-select" [ngClass]="{ 'is-invalid': isFieldInvalid('destination') || flightForm.errors?.['sameRoute'] }">
                 <option *ngFor="let city of destinationCities" [value]="city">{{ city }}</option>
               </select>
               <div *ngIf="flightForm.errors?.['sameRoute']" class="invalid-feedback">
@@ -78,7 +81,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           </div>
 
           <!-- Schedule Date & Timings -->
-          <div class="section-divider">Flight Schedule Date & Timings</div>
+          <div class="section-divider">Flight Schedule Date & Distance Timings</div>
           <hr class="hr-rule" />
 
           <div class="grid-3">
@@ -88,6 +91,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 type="date"
                 formControlName="scheduleDate"
                 [min]="todayDate"
+                (change)="onRouteOrTimeChanged()"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('scheduleDate') }"
               />
@@ -102,11 +106,12 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 <input
                   type="text"
                   formControlName="departureTime"
+                  (input)="onRouteOrTimeChanged()"
                   class="form-control"
                   [ngClass]="{ 'is-invalid': isFieldInvalid('departureTime') }"
                   placeholder="e.g. 10:30"
                 />
-                <select formControlName="departurePeriod" class="form-select" style="width: 100px;">
+                <select formControlName="departurePeriod" (change)="onRouteOrTimeChanged()" class="form-select" style="width: 100px;">
                   <option value="AM">AM</option>
                   <option value="PM">PM</option>
                 </select>
@@ -117,22 +122,24 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Arrival Time <span class="required">*</span></label>
+              <label class="form-label">Calculated Arrival Time (Distance Auto) <span class="required">*</span></label>
               <div style="display: flex; gap: 8px;">
                 <input
                   type="text"
                   formControlName="arrivalTime"
                   class="form-control"
+                  readonly
+                  style="background: #f1f5f9; cursor: not-allowed;"
                   [ngClass]="{ 'is-invalid': isFieldInvalid('arrivalTime') }"
-                  placeholder="e.g. 01:45"
+                  placeholder="Auto calculated"
                 />
-                <select formControlName="arrivalPeriod" class="form-select" style="width: 100px;">
+                <select formControlName="arrivalPeriod" class="form-select" style="width: 100px; pointer-events: none; background: #f1f5f9;">
                   <option value="AM">AM</option>
                   <option value="PM">PM</option>
                 </select>
               </div>
               <div *ngIf="isFieldInvalid('arrivalTime')" class="invalid-feedback">
-                Arrival time is required (hh:mm).
+                Arrival time is required.
               </div>
             </div>
           </div>
@@ -284,7 +291,7 @@ export class FlightFormComponent implements OnInit {
         scheduleDate: [this.todayDate, [Validators.required]],
         departureTime: ['10:30', [Validators.required, Validators.pattern(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/)]],
         departurePeriod: ['AM', [Validators.required]],
-        arrivalTime: ['01:45', [Validators.required, Validators.pattern(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/)]],
+        arrivalTime: ['12:45', [Validators.required]],
         arrivalPeriod: ['PM', [Validators.required]],
         economyClassFare: [5000, [Validators.required, Validators.min(1), Validators.max(999999)]],
         businessClassFare: [10000, [Validators.required, Validators.min(1), Validators.max(999999)]],
@@ -293,7 +300,7 @@ export class FlightFormComponent implements OnInit {
         seatCapacityBusinessClass: [30, [Validators.required, Validators.min(1), Validators.max(1000)]],
         seatCapacityExecutiveClass: [15, [Validators.required, Validators.min(1), Validators.max(1000)]]
       },
-      { validators: [this.originDestinationValidator, this.fareVerificationValidator, this.capacityHierarchyValidator] }
+      { validators: [this.originDestinationValidator, this.fareVerificationValidator, this.capacityHierarchyValidator, this.pastDepartureTimeValidator.bind(this)] }
     );
 
     this.updateCityLists();
@@ -330,13 +337,17 @@ export class FlightFormComponent implements OnInit {
 
         this.flightForm.patchValue({
           ...f,
+          scheduleDate: f.scheduleDate || this.todayDate,
           departureTime: depTime,
           departurePeriod: depP,
           arrivalTime: arrTime,
           arrivalPeriod: arrP
         });
         this.updateCityLists();
+        this.recalculateArrivalTime();
       });
+    } else {
+      this.recalculateArrivalTime();
     }
   }
 
@@ -348,22 +359,62 @@ export class FlightFormComponent implements OnInit {
     this.originCities = this.allCities.filter(c => c !== selectedDest);
   }
 
-  onOriginChanged(): void {
+  onRouteOrTimeChanged(): void {
     this.updateCityLists();
     if (this.flightForm.value.origin === this.flightForm.value.destination) {
       if (this.destinationCities.length > 0) {
         this.flightForm.patchValue({ destination: this.destinationCities[0] });
       }
     }
+    this.recalculateArrivalTime();
   }
 
-  onDestinationChanged(): void {
-    this.updateCityLists();
-    if (this.flightForm.value.origin === this.flightForm.value.destination) {
-      if (this.originCities.length > 0) {
-        this.flightForm.patchValue({ origin: this.originCities[0] });
-      }
-    }
+  recalculateArrivalTime(): void {
+    const origin = this.flightForm?.value?.origin || '';
+    const dest = this.flightForm?.value?.destination || '';
+    const depTimeStr = this.flightForm?.value?.departureTime || '10:30';
+    const depPeriod = this.flightForm?.value?.departurePeriod || 'AM';
+
+    const parts = depTimeStr.split(':');
+    if (parts.length !== 2) return;
+
+    let hours = parseInt(parts[0], 10);
+    let minutes = parseInt(parts[1], 10);
+
+    if (isNaN(hours) || isNaN(minutes)) return;
+
+    if (depPeriod === 'PM' && hours < 12) hours += 12;
+    if (depPeriod === 'AM' && hours === 12) hours = 0;
+
+    // Distance flight duration logic
+    let durationMins = 120; // Default 2 hours
+    const oClean = origin.replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+    const dClean = dest.replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+
+    if ((oClean === 'MUMBAI' && dClean === 'DELHI') || (oClean === 'DELHI' && dClean === 'MUMBAI')) durationMins = 135;
+    else if ((oClean === 'MUMBAI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'MUMBAI')) durationMins = 105;
+    else if ((oClean === 'MUMBAI' && dClean === 'HYDERABAD') || (oClean === 'HYDERABAD' && dClean === 'MUMBAI')) durationMins = 85;
+    else if ((oClean === 'MUMBAI' && dClean === 'DUBAI') || (oClean === 'DUBAI' && dClean === 'MUMBAI')) durationMins = 210;
+    else if ((oClean === 'DELHI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'DELHI')) durationMins = 170;
+    else if ((oClean === 'DELHI' && dClean === 'LONDON') || (oClean === 'LONDON' && dClean === 'DELHI')) durationMins = 555;
+    else if ((oClean === 'VIJAYAWADA' && dClean === 'VISAKHAPATNAM') || (oClean === 'VISAKHAPATNAM' && dClean === 'VIJAYAWADA')) durationMins = 60;
+
+    let totalMins = (hours * 60) + minutes + durationMins;
+    totalMins = totalMins % (24 * 60);
+
+    let arrHours24 = Math.floor(totalMins / 60);
+    let arrMins = totalMins % 60;
+
+    let arrPeriod = arrHours24 >= 12 ? 'PM' : 'AM';
+    let arrHours12 = arrHours24 % 12;
+    if (arrHours12 === 0) arrHours12 = 12;
+
+    const formattedArrTime = `${arrHours12.toString().padStart(2, '0')}:${arrMins.toString().padStart(2, '0')}`;
+
+    this.flightForm.patchValue({
+      arrivalTime: formattedArrTime,
+      arrivalPeriod: arrPeriod
+    }, { emitEvent: false });
   }
 
   goBack(): void {
@@ -407,6 +458,37 @@ export class FlightFormComponent implements OnInit {
     return null;
   }
 
+  pastDepartureTimeValidator(control: AbstractControl): ValidationErrors | null {
+    const schedDate = control.get('scheduleDate')?.value;
+    const depTimeStr = control.get('departureTime')?.value;
+    const depPeriod = control.get('departurePeriod')?.value;
+
+    if (!schedDate || !depTimeStr || schedDate !== this.todayDate) {
+      return null;
+    }
+
+    const parts = depTimeStr.split(':');
+    if (parts.length !== 2) return null;
+
+    let hours = parseInt(parts[0], 10);
+    let minutes = parseInt(parts[1], 10);
+
+    if (isNaN(hours) || isNaN(minutes)) return null;
+
+    if (depPeriod === 'PM' && hours < 12) hours += 12;
+    if (depPeriod === 'AM' && hours === 12) hours = 0;
+
+    const now = new Date();
+    const currentMins = (now.getHours() * 60) + now.getMinutes();
+    const flightDepMins = (hours * 60) + minutes;
+
+    if (flightDepMins < currentMins) {
+      return { pastDepartureTime: true };
+    }
+
+    return null;
+  }
+
   isFieldInvalid(field: string): boolean {
     const control = this.flightForm.get(field);
     return !!(control && control.invalid && (control.dirty || control.touched));
@@ -434,6 +516,7 @@ export class FlightFormComponent implements OnInit {
       carrierName: carrierName,
       origin: formVal.origin,
       destination: formVal.destination,
+      scheduleDate: formVal.scheduleDate,
       departureTime: formattedDepTime,
       arrivalTime: formattedArrTime,
       airFare: Number(formVal.economyClassFare),

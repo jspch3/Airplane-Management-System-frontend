@@ -41,7 +41,7 @@ import { LoginResponse } from '../../models/user.model';
                 <th>Booking ID</th>
                 <th>Flight & Route</th>
                 <th>Departure & Arrival Timings</th>
-                <th>Customer Full Details</th>
+                <th>User ID</th>
                 <th>Travel Date</th>
                 <th>Seats & Class</th>
                 <th>Net Paid (&#8377;)</th>
@@ -63,14 +63,9 @@ import { LoginResponse } from '../../models/user.model';
                     🛬 Arr: {{ b.arrivalTime || '01:45 PM' }}
                   </div>
                 </td>
-                <!-- Full Customer Details View for Admin and Users -->
+                <!-- Strictly ONLY User ID rendered for both Admin & Customer views -->
                 <td>
-                  <div style="font-weight: 800; color: var(--primary-navy);">👤 {{ b.userName }}</div>
-                  <div style="font-size: 0.8rem; color: #0284c7;">📧 {{ b.userEmail || (b.userName + '@ams.com') }}</div>
-                  <div style="font-size: 0.8rem; color: var(--gray-600);">📱 {{ b.userPhone || '9876543210' }}</div>
-                  <span class="badge" style="background: #e0f2fe; color: #0369a1; font-size: 0.7rem; font-weight: 800; text-transform: uppercase;">
-                    ⭐ {{ b.customerCategory || 'REGULAR' }}
-                  </span>
+                  <div style="font-weight: 800; color: var(--primary-navy);">👤 User ID: #{{ b.userId }}</div>
                 </td>
                 <td>{{ b.dateOfTravel }}</td>
                 <td>
@@ -95,20 +90,28 @@ import { LoginResponse } from '../../models/user.model';
                 </td>
                 <td><code style="font-size: 0.8rem; background: var(--gray-100); padding: 3px 6px; border-radius: 4px;">{{ b.transactionId }}</code></td>
                 <td>
-                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
                     <button (click)="printTicket(b)" class="btn btn-primary btn-sm" style="padding: 6px 10px; font-size: 0.8rem;">
                       🖨️ Print Ticket
                     </button>
 
-                    <!-- Customer Only Cancellation Button (Admin Deletion/Cancellation Removed) -->
+                    <!-- Customer Cancel Option: Disabled/Hidden if journey is completed -->
                     <button
-                      *ngIf="user && user.role === 'CUSTOMER' && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled'"
+                      *ngIf="user && user.role === 'CUSTOMER' && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled' && !isJourneyCompleted(b)"
                       (click)="openCancelModal(b)"
                       class="btn btn-danger btn-sm"
                       style="padding: 6px 10px; font-size: 0.8rem;"
                     >
                       🚫 Cancel Ticket
                     </button>
+
+                    <span
+                      *ngIf="user && user.role === 'CUSTOMER' && isJourneyCompleted(b) && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled'"
+                      class="badge"
+                      style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; font-weight: 700; border: 1px solid #cbd5e1;"
+                    >
+                      ✓ Journey Completed
+                    </span>
                   </div>
                 </td>
               </tr>
@@ -153,7 +156,7 @@ import { LoginResponse } from '../../models/user.model';
               <div style="font-size: 1.25rem; font-weight: 900; color: var(--primary-navy);">{{ printableBooking.flightName }}</div>
               <div style="font-size: 0.95rem; font-weight: 700; color: var(--primary-blue);">Booking ID: #{{ printableBooking.bookingId }}</div>
               <div style="font-size: 0.85rem; color: var(--gray-800); margin-top: 4px;">
-                Customer: <strong>👤 {{ printableBooking.userName }}</strong> (📧 {{ printableBooking.userEmail || (printableBooking.userName + '@ams.com') }})
+                User ID: <strong>👤 #{{ printableBooking.userId }}</strong>
               </div>
             </div>
 
@@ -348,6 +351,35 @@ export class BookingListComponent implements OnInit {
       },
       error: () => this.isLoading = false
     });
+  }
+
+  isJourneyCompleted(b: Booking): boolean {
+    if (!b.dateOfTravel) return false;
+    try {
+      const travelDateStr = b.dateOfTravel;
+      let depTimeStr = b.departureTime || '10:30 AM';
+
+      let depP = 'AM';
+      if (depTimeStr.includes('PM')) { depP = 'PM'; depTimeStr = depTimeStr.replace('PM', '').trim(); }
+      else if (depTimeStr.includes('AM')) { depP = 'AM'; depTimeStr = depTimeStr.replace('AM', '').trim(); }
+
+      const parts = depTimeStr.split(':');
+      let hours = parseInt(parts[0], 10);
+      let minutes = parseInt(parts[1], 10);
+      if (isNaN(hours)) hours = 10;
+      if (isNaN(minutes)) minutes = 30;
+
+      if (depP === 'PM' && hours < 12) hours += 12;
+      if (depP === 'AM' && hours === 12) hours = 0;
+
+      const dateParts = travelDateStr.split('-').map(Number);
+      if (dateParts.length !== 3) return false;
+
+      const flightDepDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hours, minutes);
+      return new Date() >= flightDepDate;
+    } catch (e) {
+      return false;
+    }
   }
 
   printTicket(b: Booking): void {

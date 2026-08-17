@@ -39,6 +39,8 @@ export const PINCODE_MAP: Record<string, PincodeLocation> = {
   '560002': { city: 'Bengaluru', state: 'Karnataka' },
   '500001': { city: 'Hyderabad', state: 'Telangana' },
   '500002': { city: 'Hyderabad', state: 'Telangana' },
+  '520001': { city: 'Vijayawada', state: 'Andhra Pradesh' },
+  '530001': { city: 'Visakhapatnam', state: 'Andhra Pradesh' },
   '600001': { city: 'Chennai', state: 'Tamil Nadu' },
   '600002': { city: 'Chennai', state: 'Tamil Nadu' },
   '700001': { city: 'Kolkata', state: 'West Bengal' },
@@ -57,18 +59,22 @@ export function lookupPincode(pincode: string): PincodeLocation | null {
   if (!pincode || pincode.length !== 6) return null;
   if (PINCODE_MAP[pincode]) return PINCODE_MAP[pincode];
 
-  // Algorithmic fallbacks based on Indian PIN Code postal circles:
-  const prefix1 = pincode.charAt(0);
   const prefix2 = pincode.substring(0, 2);
 
-  if (prefix2 === '40' || prefix2 === '41' || prefix2 === '42' || prefix2 === '43' || prefix2 === '44') {
+  if (prefix2 === '40' || prefix2 === '42' || prefix2 === '43' || prefix2 === '44') {
     return { city: 'Mumbai', state: 'Maharashtra' };
+  } else if (prefix2 === '41') {
+    return { city: 'Pune', state: 'Maharashtra' };
   } else if (prefix2 === '11') {
     return { city: 'Delhi', state: 'Delhi' };
   } else if (prefix2 === '56' || prefix2 === '57' || prefix2 === '58' || prefix2 === '59') {
     return { city: 'Bengaluru', state: 'Karnataka' };
-  } else if (prefix2 === '50' || prefix2 === '51' || prefix2 === '52' || prefix2 === '53') {
+  } else if (prefix2 === '50') {
     return { city: 'Hyderabad', state: 'Telangana' };
+  } else if (prefix2 === '52') {
+    return { city: 'Vijayawada', state: 'Andhra Pradesh' };
+  } else if (prefix2 === '53') {
+    return { city: 'Visakhapatnam', state: 'Andhra Pradesh' };
   } else if (prefix2 === '60' || prefix2 === '61' || prefix2 === '62' || prefix2 === '63' || prefix2 === '64') {
     return { city: 'Chennai', state: 'Tamil Nadu' };
   } else if (prefix2 === '70' || prefix2 === '71' || prefix2 === '72' || prefix2 === '73' || prefix2 === '74') {
@@ -77,22 +83,8 @@ export function lookupPincode(pincode: string): PincodeLocation | null {
     return { city: 'Ahmedabad', state: 'Gujarat' };
   } else if (prefix2 === '68' || prefix2 === '69') {
     return { city: 'Kochi', state: 'Kerala' };
-  } else if (prefix1 === '1') {
-    return { city: 'Northern Zone', state: 'Delhi' };
-  } else if (prefix1 === '2') {
-    return { city: 'Central Zone', state: 'Uttar Pradesh' };
-  } else if (prefix1 === '3') {
-    return { city: 'Western Zone', state: 'Gujarat' };
-  } else if (prefix1 === '4') {
-    return { city: 'Maharashtra Zone', state: 'Maharashtra' };
-  } else if (prefix1 === '5') {
-    return { city: 'Southern Zone', state: 'Karnataka' };
-  } else if (prefix1 === '6') {
-    return { city: 'Kerala Zone', state: 'Kerala' };
-  } else if (prefix1 === '7') {
-    return { city: 'Eastern Zone', state: 'West Bengal' };
-  } else if (prefix1 === '8') {
-    return { city: 'Bihar Zone', state: 'Bihar' };
   }
+
+  // Return null if pincode prefix is not recognized, so customer can select State and type City manually
   return null;
 }

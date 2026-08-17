@@ -39,21 +39,32 @@ import { AuthService } from '../../services/auth.service';
             </div>
           </div>
 
-          <!-- Password Input (Renders completely blank) -->
+          <!-- Password Input with Show Password Toggle -->
           <div class="form-group">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <label class="form-label">Password <span class="required">*</span></label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label class="form-label" style="margin-bottom: 0;">Password <span class="required">*</span></label>
               <button type="button" (click)="openForgotPasswordModal()" style="background: none; border: none; color: var(--primary-blue); font-size: 0.85rem; font-weight: 600; cursor: pointer; padding: 0;">
                 Forgot Password?
               </button>
             </div>
-            <input
-              type="password"
-              formControlName="password"
-              class="form-control"
-              [ngClass]="{ 'is-invalid': isFieldInvalid('password') || loginError }"
-              placeholder="Enter your password"
-            />
+            <div style="position: relative;">
+              <input
+                [type]="showPassword ? 'text' : 'password'"
+                formControlName="password"
+                class="form-control"
+                style="padding-right: 46px;"
+                [ngClass]="{ 'is-invalid': isFieldInvalid('password') || loginError }"
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                (click)="toggleShowPassword()"
+                style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 1.1rem; cursor: pointer; color: var(--gray-600); z-index: 10;"
+                [title]="showPassword ? 'Hide Password' : 'Show Password'"
+              >
+                {{ showPassword ? '🙈' : '👁️' }}
+              </button>
+            </div>
             <div *ngIf="isFieldInvalid('password')" class="invalid-feedback">
               Password is required.
             </div>
@@ -183,6 +194,11 @@ export class LoginComponent {
   loginForm: FormGroup;
   isSubmitting = false;
   loginError = '';
+  showPassword = false;
+
+  toggleShowPassword(): void {
+    this.showPassword = !this.showPassword;
+  }
 
   // Forgot password modal state
   showForgotModal = false;

@@ -49,18 +49,17 @@ import { BookingRequest, Booking } from '../../models/booking.model';
           <!-- Date of Travel, Seat Category & Number of Seats -->
           <div class="grid-3">
             <div class="form-group">
-              <label class="form-label">Date of Travel (3-Month Window) <span class="required">*</span></label>
+              <label class="form-label">Date of Travel (Assigned Schedule) <span class="required">*</span></label>
               <input
                 type="date"
                 formControlName="dateOfTravel"
-                [min]="minDate"
-                [max]="maxDate"
-                (change)="recalculateDiscounts()"
+                readonly
+                style="background: #f1f5f9; cursor: not-allowed; font-weight: 700; color: var(--primary-navy);"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('dateOfTravel') }"
               />
-              <div *ngIf="isFieldInvalid('dateOfTravel')" class="invalid-feedback">
-                Date of travel must be within 3 months from today (between {{ minDate }} and {{ maxDate }}).
+              <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+                🔒 Auto-assigned to selected flight's scheduled date.
               </div>
             </div>
 
@@ -646,6 +645,17 @@ export class BookFlightComponent implements OnInit {
   onFlightSelected(): void {
     const flightId = +this.bookingForm.value.flightId;
     this.selectedFlight = this.flights.find(f => f.flightId === flightId) || null;
+
+    if (this.selectedFlight?.scheduleDate) {
+      this.bookingForm.patchValue({
+        dateOfTravel: this.selectedFlight.scheduleDate
+      });
+    } else {
+      this.bookingForm.patchValue({
+        dateOfTravel: this.minDate
+      });
+    }
+
     if (this.selectedFlight?.carrierId) {
       this.carrierService.getCarrierById(this.selectedFlight.carrierId).subscribe(c => {
         this.selectedCarrier = c;

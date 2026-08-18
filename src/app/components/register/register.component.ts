@@ -22,12 +22,17 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
           Fill in your passenger details below. Registration is open to customers aged 18 to 120 years.
         </p>
 
-        <!-- Prominent Mobile Info Banner -->
-        <div class="info-banner">
-          <span>ℹ️</span>
-          <div>
-            <strong>Registration Rules:</strong> Age must be <strong>18 to 120 years</strong>. Mobile number must be 10 digits starting with <strong>6, 7, 8, or 9</strong>. Entering a valid 6-digit Indian PIN Code auto-populates City and State.
+        <!-- Line-by-Line Registration Rules Info Banner (Pincode instruction removed) -->
+        <div class="alert alert-info" style="margin-bottom: 32px; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+            <span>ℹ️</span> Customer Account Registration Instructions & Rules:
           </div>
+          <ul style="margin-left: 24px; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem;">
+            <li>Passenger age must be between <strong>18 and 120 years</strong>.</li>
+            <li>Mobile phone number must be 10 digits starting with <strong>6, 7, 8, or 9</strong>.</li>
+            <li>Username, Mobile Number, and Email ID must be strictly unique across system accounts.</li>
+            <li>Password must contain at least 8 characters with uppercase, lowercase, digit, and special symbol (&#64;$!%*?&amp;).</li>
+          </ul>
         </div>
 
         <div *ngIf="successMessage" class="alert alert-success">

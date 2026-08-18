@@ -52,9 +52,9 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             🔍 Filter Flight Schedule by Carrier, Travel Date & Route Cities
           </div>
 
-          <div class="grid-4" style="gap: 24px;">
+          <div class="grid-4" style="gap: 24px; align-items: flex-end;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Live Search by Carrier</label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Live Search by Carrier</label>
               <input
                 type="text"
                 [(ngModel)]="searchCarrierName"
@@ -66,7 +66,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
             <!-- Requirement 2: Strict 3-Month Date Window Filter -->
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Exact Travel Date (3-Month Window)</label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Travel Date (3-Month Window)</label>
               <input
                 type="date"
                 [(ngModel)]="searchScheduleDate"
@@ -79,7 +79,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
             <!-- Requirement 3: Mutual Exclusion for Origin City -->
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Filter Origin City</label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter Origin City</label>
               <select [(ngModel)]="searchOrigin" (change)="applyFilters()" class="form-select">
                 <option value="">All Origins</option>
                 <option *ngFor="let apt of majorAirports" [value]="apt" [disabled]="apt === searchDestination">
@@ -90,7 +90,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
             <!-- Requirement 3: Mutual Exclusion for Destination City -->
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Filter Destination City</label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter Destination City</label>
               <select [(ngModel)]="searchDestination" (change)="applyFilters()" class="form-select">
                 <option value="">All Destinations</option>
                 <option *ngFor="let apt of majorAirports" [value]="apt" [disabled]="apt === searchOrigin">

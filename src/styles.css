@@ -197,6 +197,33 @@ body {
   margin-top: 8px;
 }
 
+/* Single Line Email Input Group Alignment */
+.email-input-group {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 8px !important;
+  width: 100% !important;
+}
+
+.email-input-group .email-prefix-input {
+  flex: 1 1 50% !important;
+  min-width: 0 !important;
+}
+
+.email-input-group .email-at-symbol {
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  color: var(--primary-navy) !important;
+  padding: 0 4px !important;
+  user-select: none !important;
+}
+
+.email-input-group .email-domain-select {
+  flex: 1 1 50% !important;
+  min-width: 140px !important;
+}
+
 /* Styled Alert Banners */
 .alert {
   padding: 20px 24px;

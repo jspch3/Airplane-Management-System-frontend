@@ -47,7 +47,7 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
           <!-- Row 1: Full Name, Phone Number & Date of Birth -->
           <div class="grid-3" style="gap: 24px;">
             <div class="form-group">
-              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Full Name <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Full Name <span class="required">*</span></label>
               <input
                 type="text"
                 formControlName="fullName"
@@ -64,7 +64,7 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Phone Number <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Phone Number <span class="required">*</span></label>
               <input
                 type="tel"
                 inputmode="numeric"
@@ -82,7 +82,7 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Date of Birth (18-120 yrs) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Date of Birth <span class="required">*</span></label>
               <input
                 type="date"
                 formControlName="dob"

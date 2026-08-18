@@ -86,7 +86,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
           <div class="grid-4" style="gap: 20px;">
             <div class="form-group">
-              <label class="form-label">Schedule Start Date <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Schedule Start Date <span class="required">*</span></label>
               <input
                 type="date"
                 formControlName="scheduleDate"
@@ -101,7 +101,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Recurrence Theme / Frequency <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Recurrence Theme <span class="required">*</span></label>
               <select formControlName="flightFrequency" class="form-select">
                 <option value="SINGLE_DATE">📅 Single Date Only (One-Time Flight)</option>
                 <option value="DAILY">🗓️ Daily (Every Day)</option>
@@ -112,7 +112,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Departure Time <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Departure Time <span class="required">*</span></label>
               <div style="display: flex; gap: 8px;">
                 <input
                   type="text"
@@ -133,7 +133,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Calculated Arrival Time <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Calculated Arrival Time <span class="required">*</span></label>
               <div style="display: flex; gap: 8px;">
                 <input
                   type="text"
@@ -161,7 +161,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
           <div class="grid-3">
             <div class="form-group">
-              <label class="form-label">Economy Class Fare (&#8377;) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Economy Class Fare (&#8377;) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="economyClassFare"
@@ -176,7 +176,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Business Class Fare (&#8377;) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Business Class Fare (&#8377;) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="businessClassFare"
@@ -191,7 +191,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Executive Class Fare (&#8377;) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Executive Class Fare (&#8377;) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="executiveClassFare"
@@ -212,7 +212,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
           <div class="grid-3">
             <div class="form-group">
-              <label class="form-label">Economy Class Seats (1-1000) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Economy Class Seats (1-1000) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="seatCapacityEconomyClass"
@@ -227,7 +227,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Business Class Seats (1-1000) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Business Class Seats (1-1000) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="seatCapacityBusinessClass"
@@ -242,7 +242,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Executive Class Seats (1-1000) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 28px; display: flex; align-items: flex-end;">Executive Class Seats (1-1000) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="seatCapacityExecutiveClass"

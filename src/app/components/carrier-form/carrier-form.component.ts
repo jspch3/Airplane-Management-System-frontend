@@ -91,7 +91,7 @@ import { Carrier } from '../../models/carrier.model';
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">Bulk Booking Discount % (&gt;4 Seats, Max 25%) <span class="required">*</span></label>
+                <label class="form-label">Bulk Booking Discount % (&gt;4 Seats, Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="bulkBookingDiscount"
@@ -101,7 +101,7 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('bulkBookingDiscount')" class="invalid-feedback">
-                  Bulk discount must be between 0% and 25%.
+                  Bulk discount must be between 0% and 40%.
                 </div>
               </div>
             </div>
@@ -115,7 +115,7 @@ import { Carrier } from '../../models/carrier.model';
 
             <div class="grid-3" style="gap: 24px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">30 Days Advance % (Max 10%) <span class="required">*</span></label>
+                <label class="form-label">30 Days Advance % (Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="discount30DaysAdvanceBooking"
@@ -125,12 +125,12 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('discount30DaysAdvanceBooking')" class="invalid-feedback">
-                  Discount must be between 0% and 10%.
+                  Discount must be between 0% and 40%.
                 </div>
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">60 Days Advance % (Max 15%) <span class="required">*</span></label>
+                <label class="form-label">60 Days Advance % (Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="discount60DaysAdvanceBooking"
@@ -140,12 +140,12 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('discount60DaysAdvanceBooking')" class="invalid-feedback">
-                  Discount must be between 0% and 15%.
+                  Discount must be between 0% and 40%.
                 </div>
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">90 Days Advance % (Max 25%) <span class="required">*</span></label>
+                <label class="form-label">90 Days Advance % (Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="discount90DaysAdvanceBooking"
@@ -155,7 +155,7 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('discount90DaysAdvanceBooking')" class="invalid-feedback">
-                  Discount must be between 0% and 25%.
+                  Discount must be between 0% and 40%.
                 </div>
               </div>
             </div>
@@ -169,7 +169,7 @@ import { Carrier } from '../../models/carrier.model';
 
             <div class="grid-3" style="gap: 24px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">Silver Member % (Max 15%) <span class="required">*</span></label>
+                <label class="form-label">Silver Member % (Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="silverUserDiscount"
@@ -179,12 +179,12 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('silverUserDiscount')" class="invalid-feedback">
-                  Discount must be between 0% and 15%.
+                  Discount must be between 0% and 40%.
                 </div>
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">Gold Member % (Max 20%) <span class="required">*</span></label>
+                <label class="form-label">Gold Member % (Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="goldUserDiscount"
@@ -194,12 +194,12 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('goldUserDiscount')" class="invalid-feedback">
-                  Discount must be between 0% and 20%.
+                  Discount must be between 0% and 40%.
                 </div>
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">Platinum Member % (Max 30%) <span class="required">*</span></label>
+                <label class="form-label">Platinum Member % (Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="platinumUserDiscount"
@@ -209,7 +209,7 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('platinumUserDiscount')" class="invalid-feedback">
-                  Discount must be between 0% and 30%.
+                  Discount must be between 0% and 40%.
                 </div>
               </div>
             </div>
@@ -303,16 +303,16 @@ export class CarrierFormComponent implements OnInit {
     this.carrierForm = this.fb.group(
       {
         carrierName: ['', [Validators.required, Validators.minLength(2)]],
-        discount30DaysAdvanceBooking: [5.0, [Validators.required, Validators.min(0), Validators.max(10)]],
-        discount60DaysAdvanceBooking: [10.0, [Validators.required, Validators.min(0), Validators.max(15)]],
-        discount90DaysAdvanceBooking: [15.0, [Validators.required, Validators.min(0), Validators.max(25)]],
-        bulkBookingDiscount: [10.0, [Validators.required, Validators.min(0), Validators.max(25)]],
+        discount30DaysAdvanceBooking: [5.0, [Validators.required, Validators.min(0), Validators.max(40)]],
+        discount60DaysAdvanceBooking: [10.0, [Validators.required, Validators.min(0), Validators.max(40)]],
+        discount90DaysAdvanceBooking: [15.0, [Validators.required, Validators.min(0), Validators.max(40)]],
+        bulkBookingDiscount: [10.0, [Validators.required, Validators.min(0), Validators.max(40)]],
         refund2DaysPrior: [20.0, [Validators.required, Validators.min(0), Validators.max(20)]],
         refund10DaysPrior: [40.0, [Validators.required, Validators.min(0), Validators.max(40)]],
         refund20DaysPrior: [75.0, [Validators.required, Validators.min(0), Validators.max(75)]],
-        silverUserDiscount: [5.0, [Validators.required, Validators.min(0), Validators.max(15)]],
-        goldUserDiscount: [10.0, [Validators.required, Validators.min(0), Validators.max(20)]],
-        platinumUserDiscount: [15.0, [Validators.required, Validators.min(0), Validators.max(30)]]
+        silverUserDiscount: [5.0, [Validators.required, Validators.min(0), Validators.max(40)]],
+        goldUserDiscount: [10.0, [Validators.required, Validators.min(0), Validators.max(40)]],
+        platinumUserDiscount: [15.0, [Validators.required, Validators.min(0), Validators.max(40)]]
       },
       { validators: [this.hierarchyValidator] }
     );

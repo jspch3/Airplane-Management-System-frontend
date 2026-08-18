@@ -49,8 +49,28 @@ import { BookingRequest, Booking } from '../../models/booking.model';
           <!-- Date of Travel, Seat Category & Number of Seats -->
           <div class="grid-3">
             <div class="form-group">
-              <label class="form-label">Date of Travel (Assigned Schedule) <span class="required">*</span></label>
+              <label class="form-label">
+                Date of Travel
+                <span *ngIf="selectedFlight?.flightFrequency && selectedFlight?.flightFrequency !== 'SINGLE_DATE'" class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; margin-left: 6px;">
+                  {{ getFrequencyLabel(selectedFlight?.flightFrequency) }}
+                </span>
+                <span class="required">*</span>
+              </label>
+
+              <select
+                *ngIf="validTravelDates.length > 1"
+                formControlName="dateOfTravel"
+                (change)="recalculateDiscounts()"
+                class="form-select"
+                style="font-weight: 700; color: var(--primary-navy);"
+              >
+                <option *ngFor="let dt of validTravelDates" [value]="dt">
+                  📅 {{ dt }} (Operating Flight Date)
+                </option>
+              </select>
+
               <input
+                *ngIf="validTravelDates.length <= 1"
                 type="date"
                 formControlName="dateOfTravel"
                 readonly
@@ -59,7 +79,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 [ngClass]="{ 'is-invalid': isFieldInvalid('dateOfTravel') }"
               />
               <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-                🔒 Auto-assigned to selected flight's scheduled date.
+                {{ validTravelDates.length > 1 ? '✨ Select from valid operating dates for this flight schedule.' : '🔒 Fixed to flight schedule date.' }}
               </div>
             </div>
 
@@ -415,6 +435,16 @@ import { BookingRequest, Booking } from '../../models/booking.model';
           <div style="border: 2px dashed #cbd5e1; border-radius: 16px; padding: 24px; margin-bottom: 24px; background: #ffffff;">
             <!-- Flight Route Info -->
             <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 24px;">
+              <!-- Prominent Scheduled Travel Date Banner -->
+              <div style="background: #e0f2fe; border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 12px 18px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 1.05rem; font-weight: 900; color: #0369a1;">
+                  📅 Official Travel Date: <strong style="color: #0c4a6e;">{{ confirmedBooking.dateOfTravel || bookingForm.value.dateOfTravel }}</strong>
+                </span>
+                <span class="badge" style="background: #0284c7; color: #ffffff; font-weight: 800;">
+                  {{ getFrequencyLabel(selectedFlight?.flightFrequency) }}
+                </span>
+              </div>
+
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div>
                   <span style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase;">AIRLINE CARRIER</span>
@@ -441,7 +471,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 <div style="text-align: right;">
                   <div style="font-size: 0.75rem; color: #64748b; font-weight: 700; text-transform: uppercase;">Destination Arrival</div>
                   <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a;">{{ selectedFlight?.destination || 'Arrival City' }}</div>
-                  <div style="font-size: 0.9rem; font-weight: 700; color: #0284c7; margin-top: 2px;">⏰ Arr Time: {{ selectedFlight?.arrivalTime }}</div>
+                  <div style="font-size: 0.9rem; font-weight: 700; color: #0284c7; margin-top: 2px;">⏰ Arr Time: {{ getFormattedArrivalTime(selectedFlight) }}</div>
                 </div>
               </div>
             </div>
@@ -648,17 +678,117 @@ export class BookFlightComponent implements OnInit {
     };
   }
 
+  validTravelDates: string[] = [];
+
+  getFrequencyLabel(freq?: string): string {
+    if (freq === 'DAILY') return '🗓️ Daily';
+    if (freq === 'EVERY_3_DAYS') return '🗓️ Every 3 Days';
+    if (freq === 'WEEKLY') return '🗓️ Weekly';
+    if (freq === 'MONTHLY') return '🗓️ Monthly';
+    return '📅 Single Date';
+  }
+
+  getFormattedArrivalTime(f: Flight | null): string {
+    if (!f) return '01:45 PM';
+    if (!f.arrivalTime || f.arrivalTime.includes('+') || f.arrivalTime.toLowerCase().includes('2h')) {
+      const depStr = f.departureTime || '10:30 AM';
+      let depP = 'AM';
+      let cleanDep = depStr;
+      if (cleanDep.includes('PM')) { depP = 'PM'; cleanDep = cleanDep.replace('PM', '').trim(); }
+      else if (cleanDep.includes('AM')) { depP = 'AM'; cleanDep = cleanDep.replace('AM', '').trim(); }
+
+      const parts = cleanDep.split(':');
+      let h = parseInt(parts[0], 10) || 10;
+      let m = parseInt(parts[1], 10) || 30;
+
+      if (depP === 'PM' && h < 12) h += 12;
+      if (depP === 'AM' && h === 12) h = 0;
+
+      let durMins = 120;
+      const oClean = (f.origin || '').replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+      const dClean = (f.destination || '').replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+
+      if ((oClean === 'MUMBAI' && dClean === 'DELHI') || (oClean === 'DELHI' && dClean === 'MUMBAI')) durMins = 135;
+      else if ((oClean === 'MUMBAI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'MUMBAI')) durMins = 105;
+      else if ((oClean === 'MUMBAI' && dClean === 'HYDERABAD') || (oClean === 'HYDERABAD' && dClean === 'MUMBAI')) durMins = 85;
+      else if ((oClean === 'MUMBAI' && dClean === 'DUBAI') || (oClean === 'DUBAI' && dClean === 'MUMBAI')) durMins = 210;
+      else if ((oClean === 'DELHI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'DELHI')) durMins = 170;
+      else if ((oClean === 'VIJAYAWADA' && dClean === 'VISAKHAPATNAM') || (oClean === 'VISAKHAPATNAM' && dClean === 'VIJAYAWADA')) durMins = 60;
+
+      let totalMins = (h * 60) + m + durMins;
+      totalMins = totalMins % (24 * 60);
+
+      let arrHours24 = Math.floor(totalMins / 60);
+      let arrMins = totalMins % 60;
+
+      let arrPeriod = arrHours24 >= 12 ? 'PM' : 'AM';
+      let arrHours12 = arrHours24 % 12;
+      if (arrHours12 === 0) arrHours12 = 12;
+
+      return `${arrHours12.toString().padStart(2, '0')}:${arrMins.toString().padStart(2, '0')} ${arrPeriod}`;
+    }
+    return f.arrivalTime;
+  }
+
+  generateValidTravelDates(): void {
+    this.validTravelDates = [];
+    if (!this.selectedFlight) return;
+
+    const startStr = this.selectedFlight.scheduleDate || new Date().toISOString().split('T')[0];
+    const freq = this.selectedFlight.flightFrequency || 'SINGLE_DATE';
+
+    if (freq === 'SINGLE_DATE') {
+      this.validTravelDates = [startStr];
+      return;
+    }
+
+    const startDate = new Date(startStr);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const threeMonthsOut = new Date();
+    threeMonthsOut.setMonth(today.getMonth() + 3);
+
+    let curr = new Date(startDate);
+    while (curr < today) {
+      if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
+      else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
+      else if (freq === 'WEEKLY') curr.setDate(curr.getDate() + 7);
+      else if (freq === 'MONTHLY') curr.setMonth(curr.getMonth() + 1);
+      else break;
+    }
+
+    while (curr <= threeMonthsOut) {
+      const iso = curr.toISOString().split('T')[0];
+      this.validTravelDates.push(iso);
+
+      if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
+      else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
+      else if (freq === 'WEEKLY') curr.setDate(curr.getDate() + 7);
+      else if (freq === 'MONTHLY') curr.setMonth(curr.getMonth() + 1);
+      else break;
+
+      if (this.validTravelDates.length >= 90) break;
+    }
+
+    if (this.validTravelDates.length === 0) {
+      this.validTravelDates = [startStr];
+    }
+  }
+
   onFlightSelected(): void {
     const flightId = +this.bookingForm.value.flightId;
     this.selectedFlight = this.flights.find(f => f.flightId === flightId) || null;
 
-    if (this.selectedFlight?.scheduleDate) {
+    this.generateValidTravelDates();
+
+    if (this.validTravelDates.length > 0) {
+      this.bookingForm.patchValue({
+        dateOfTravel: this.validTravelDates[0]
+      });
+    } else if (this.selectedFlight?.scheduleDate) {
       this.bookingForm.patchValue({
         dateOfTravel: this.selectedFlight.scheduleDate
-      });
-    } else {
-      this.bookingForm.patchValue({
-        dateOfTravel: this.minDate
       });
     }
 

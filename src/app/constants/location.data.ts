@@ -13,6 +13,8 @@ export const MAJOR_AIRPORTS: string[] = [
   'Delhi (DEL)',
   'Bengaluru (BLR)',
   'Hyderabad (HYD)',
+  'Vijayawada (VGA)',
+  'Visakhapatnam (VTZ)',
   'Chennai (MAA)',
   'Kolkata (CCU)',
   'Ahmedabad (AMD)',

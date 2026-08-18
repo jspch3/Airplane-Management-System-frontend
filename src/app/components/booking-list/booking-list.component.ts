@@ -158,6 +158,14 @@ import { LoginResponse } from '../../models/user.model';
             </div>
           </div>
 
+          <!-- Prominent Travel Date Banner -->
+          <div style="background: #e0f2fe; border: 1.5px solid #7dd3fc; border-radius: 10px; padding: 12px 18px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 1.1rem; font-weight: 900; color: #0369a1;">
+              📅 Official Travel Date: <strong style="color: #0c4a6e;">{{ printableBooking.dateOfTravel }}</strong>
+            </span>
+            <span class="badge" style="background: #0284c7; color: #ffffff; font-weight: 800;">CONFIRMED TICKET</span>
+          </div>
+
           <div class="grid-2" style="margin-bottom: 20px; background: var(--gray-50); padding: 18px; border-radius: 12px;">
             <div>
               <div style="font-size: 0.75rem; font-weight: 800; color: var(--gray-600); text-transform: uppercase;">Flight Carrier & Route</div>
@@ -172,7 +180,7 @@ import { LoginResponse } from '../../models/user.model';
               <div style="font-size: 0.75rem; font-weight: 800; color: var(--gray-600); text-transform: uppercase;">Schedule & Flight Timings</div>
               <div style="font-size: 1.1rem; font-weight: 800; color: var(--primary-navy);">Date: {{ printableBooking.dateOfTravel }}</div>
               <div style="font-size: 0.95rem; font-weight: 800; color: #0284c7; margin-top: 4px;">
-                🕒 Dep: {{ printableBooking.departureTime || '10:30 AM' }} &nbsp;|&nbsp; 🛬 Arr: {{ printableBooking.arrivalTime || '01:45 PM' }}
+                🕒 Dep: {{ printableBooking.departureTime || '10:30 AM' }} &nbsp;|&nbsp; 🛬 Arr: {{ getFormattedArrivalTime(printableBooking) }}
               </div>
               <div style="font-size: 0.85rem; color: var(--gray-600); margin-top: 2px;">Class: <strong>{{ printableBooking.seatCategory }} CLASS</strong></div>
             </div>
@@ -388,6 +396,37 @@ export class BookingListComponent implements OnInit {
     } catch (e) {
       return false;
     }
+  }
+
+  getFormattedArrivalTime(b: any): string {
+    if (!b) return '01:45 PM';
+    if (!b.arrivalTime || b.arrivalTime.includes('+') || b.arrivalTime.toLowerCase().includes('2h')) {
+      const depStr = b.departureTime || '10:30 AM';
+      let depP = 'AM';
+      let cleanDep = depStr;
+      if (cleanDep.includes('PM')) { depP = 'PM'; cleanDep = cleanDep.replace('PM', '').trim(); }
+      else if (cleanDep.includes('AM')) { depP = 'AM'; cleanDep = cleanDep.replace('AM', '').trim(); }
+
+      const parts = cleanDep.split(':');
+      let h = parseInt(parts[0], 10) || 10;
+      let m = parseInt(parts[1], 10) || 30;
+
+      if (depP === 'PM' && h < 12) h += 12;
+      if (depP === 'AM' && h === 12) h = 0;
+
+      let totalMins = (h * 60) + m + 120;
+      totalMins = totalMins % (24 * 60);
+
+      let arrHours24 = Math.floor(totalMins / 60);
+      let arrMins = totalMins % 60;
+
+      let arrPeriod = arrHours24 >= 12 ? 'PM' : 'AM';
+      let arrHours12 = arrHours24 % 12;
+      if (arrHours12 === 0) arrHours12 = 12;
+
+      return `${arrHours12.toString().padStart(2, '0')}:${arrMins.toString().padStart(2, '0')} ${arrPeriod}`;
+    }
+    return b.arrivalTime;
   }
 
   printTicket(b: Booking): void {

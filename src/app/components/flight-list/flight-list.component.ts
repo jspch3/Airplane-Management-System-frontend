@@ -139,7 +139,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                       {{ getFrequencyLabel(f.flightFrequency) }}
                     </div>
                     <div style="color: #0284c7; font-weight: 700;">
-                      🕒 Dep: {{ f.departureTime || '10:30 AM' }} &nbsp;|&nbsp; 🛬 Arr: {{ f.arrivalTime || '01:45 PM' }}
+                      🕒 Dep: {{ f.departureTime || '10:30 AM' }} &nbsp;|&nbsp; 🛬 Arr: {{ getFormattedArrivalTime(f) }}
                     </div>
                   </div>
                 </td>
@@ -333,8 +333,55 @@ export class FlightListComponent implements OnInit {
     });
   }
 
+  getFormattedArrivalTime(f: Flight): string {
+    if (!f.arrivalTime || f.arrivalTime.includes('+') || f.arrivalTime.toLowerCase().includes('2h')) {
+      // Calculate exact distance arrival time
+      const depStr = f.departureTime || '10:30 AM';
+      let depP = 'AM';
+      let cleanDep = depStr;
+      if (cleanDep.includes('PM')) { depP = 'PM'; cleanDep = cleanDep.replace('PM', '').trim(); }
+      else if (cleanDep.includes('AM')) { depP = 'AM'; cleanDep = cleanDep.replace('AM', '').trim(); }
+
+      const parts = cleanDep.split(':');
+      let h = parseInt(parts[0], 10) || 10;
+      let m = parseInt(parts[1], 10) || 30;
+
+      if (depP === 'PM' && h < 12) h += 12;
+      if (depP === 'AM' && h === 12) h = 0;
+
+      let durMins = 120;
+      const oClean = (f.origin || '').replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+      const dClean = (f.destination || '').replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+
+      if ((oClean === 'MUMBAI' && dClean === 'DELHI') || (oClean === 'DELHI' && dClean === 'MUMBAI')) durMins = 135;
+      else if ((oClean === 'MUMBAI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'MUMBAI')) durMins = 105;
+      else if ((oClean === 'MUMBAI' && dClean === 'HYDERABAD') || (oClean === 'HYDERABAD' && dClean === 'MUMBAI')) durMins = 85;
+      else if ((oClean === 'MUMBAI' && dClean === 'DUBAI') || (oClean === 'DUBAI' && dClean === 'MUMBAI')) durMins = 210;
+      else if ((oClean === 'DELHI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'DELHI')) durMins = 170;
+      else if ((oClean === 'VIJAYAWADA' && dClean === 'VISAKHAPATNAM') || (oClean === 'VISAKHAPATNAM' && dClean === 'VIJAYAWADA')) durMins = 60;
+
+      let totalMins = (h * 60) + m + durMins;
+      totalMins = totalMins % (24 * 60);
+
+      let arrHours24 = Math.floor(totalMins / 60);
+      let arrMins = totalMins % 60;
+
+      let arrPeriod = arrHours24 >= 12 ? 'PM' : 'AM';
+      let arrHours12 = arrHours24 % 12;
+      if (arrHours12 === 0) arrHours12 = 12;
+
+      return `${arrHours12.toString().padStart(2, '0')}:${arrMins.toString().padStart(2, '0')} ${arrPeriod}`;
+    }
+    return f.arrivalTime;
+  }
+
   applyFilters(): void {
     this.filteredFlights = this.flights.filter(f => {
+      // Exclude passed flights for CUSTOMERS
+      if (this.user && this.user.role === 'CUSTOMER' && this.isFlightPassed(f)) {
+        return false;
+      }
+
       const matchCarrier = !this.searchCarrierName.trim() ||
         f.carrierName.toLowerCase().includes(this.searchCarrierName.trim().toLowerCase());
 

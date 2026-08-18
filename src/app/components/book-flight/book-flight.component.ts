@@ -635,12 +635,19 @@ export class BookFlightComponent implements OnInit {
   }
 
   isFlightPassed(f: Flight): boolean {
-    if (!f.scheduleDate) return false;
+    if (!f || !f.scheduleDate) return false;
+    const freq = f.flightFrequency || 'SINGLE_DATE';
+
+    // Recurring flights always have upcoming operating dates within the 3-month window
+    if (freq !== 'SINGLE_DATE') {
+      return false;
+    }
+
     try {
       const dateParts = f.scheduleDate.split('-').map(Number);
       if (dateParts.length !== 3) return false;
 
-      let depTimeStr = f.arrivalTime || f.departureTime || '10:30 AM';
+      let depTimeStr = f.departureTime || '10:30 AM';
       let depP = 'AM';
       if (depTimeStr.includes('PM')) { depP = 'PM'; depTimeStr = depTimeStr.replace('PM', '').trim(); }
       else if (depTimeStr.includes('AM')) { depP = 'AM'; depTimeStr = depTimeStr.replace('AM', '').trim(); }

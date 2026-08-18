@@ -299,13 +299,32 @@ export class FlightListComponent implements OnInit {
     return '📅 Single Date Only';
   }
 
-  isFlightPassed(f: Flight): boolean {
-    if (!f.scheduleDate) return false;
+  normalizeCity(city?: string): string {
+    if (!city) return '';
+    let clean = city.replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+    if (clean === 'HYD' || clean === 'HYDERABAD') return 'HYDERABAD';
+    if (clean === 'VIJ' || clean === 'VGA' || clean === 'VIJAYAWADA') return 'VIJAYAWADA';
+    if (clean === 'VTZ' || clean === 'VISAKHAPATNAM' || clean === 'VIZAG') return 'VISAKHAPATNAM';
+    if (clean === 'BOM' || clean === 'MUMBAI') return 'MUMBAI';
+    if (clean === 'DEL' || clean === 'DELHI') return 'DELHI';
+    if (clean === 'BLR' || clean === 'BENGALURU' || clean === 'BANGALORE') return 'BENGALURU';
+    if (clean === 'MAA' || clean === 'CHENNAI') return 'CHENNAI';
+    if (clean === 'CCU' || clean === 'KOLKATA') return 'KOLKATA';
+    return clean;
+  }
+
+  isFlightPassed(f: Flight, targetDateStr?: string): boolean {
+    if (!f) return false;
+    const effectiveDateStr = targetDateStr || this.searchScheduleDate || f.scheduleDate;
+    if (!effectiveDateStr) return false;
+
+    const freq = f.flightFrequency || 'SINGLE_DATE';
+
     try {
-      const dateParts = f.scheduleDate.split('-').map(Number);
+      const dateParts = effectiveDateStr.split('-').map(Number);
       if (dateParts.length !== 3) return false;
 
-      let depTimeStr = f.arrivalTime || f.departureTime || '10:30 AM';
+      let depTimeStr = f.departureTime || '10:30 AM';
       let depP = 'AM';
       if (depTimeStr.includes('PM')) { depP = 'PM'; depTimeStr = depTimeStr.replace('PM', '').trim(); }
       else if (depTimeStr.includes('AM')) { depP = 'AM'; depTimeStr = depTimeStr.replace('AM', '').trim(); }
@@ -320,7 +339,35 @@ export class FlightListComponent implements OnInit {
       if (depP === 'AM' && hours === 12) hours = 0;
 
       const flightDateTime = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hours, minutes);
-      return new Date() >= flightDateTime;
+      const now = new Date();
+
+      const targetDateObj = new Date(dateParts[0], dateParts[1] - 1, dateParts[2]);
+      const todayDateObj = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      if (targetDateObj > todayDateObj) {
+        return false; // Future date is valid!
+      }
+
+      if (targetDateObj < todayDateObj) {
+        // If recurring, future dates exist; only this past date passed
+        return freq === 'SINGLE_DATE';
+      }
+
+      // Today: check if departure time has passed
+      const isPassedToday = now >= flightDateTime;
+
+      // If single date flight and passed today, return true
+      if (freq === 'SINGLE_DATE') {
+        return isPassedToday;
+      }
+
+      // For recurring flight: today's departure passed, but future dates exist!
+      // If user is searching specifically for today, return isPassedToday
+      if (this.searchScheduleDate) {
+        return isPassedToday;
+      }
+
+      return false;
     } catch (e) {
       return false;
     }
@@ -340,7 +387,6 @@ export class FlightListComponent implements OnInit {
 
   getFormattedArrivalTime(f: Flight): string {
     if (!f.arrivalTime || f.arrivalTime.includes('+') || f.arrivalTime.toLowerCase().includes('2h')) {
-      // Calculate exact distance arrival time
       const depStr = f.departureTime || '10:30 AM';
       let depP = 'AM';
       let cleanDep = depStr;
@@ -355,8 +401,8 @@ export class FlightListComponent implements OnInit {
       if (depP === 'AM' && h === 12) h = 0;
 
       let durMins = 120;
-      const oClean = (f.origin || '').replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
-      const dClean = (f.destination || '').replaceAll(/\s*\([^)]*\)/g, '').trim().toUpperCase();
+      const oClean = this.normalizeCity(f.origin);
+      const dClean = this.normalizeCity(f.destination);
 
       if ((oClean === 'MUMBAI' && dClean === 'DELHI') || (oClean === 'DELHI' && dClean === 'MUMBAI')) durMins = 135;
       else if ((oClean === 'MUMBAI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'MUMBAI')) durMins = 105;
@@ -364,6 +410,7 @@ export class FlightListComponent implements OnInit {
       else if ((oClean === 'MUMBAI' && dClean === 'DUBAI') || (oClean === 'DUBAI' && dClean === 'MUMBAI')) durMins = 210;
       else if ((oClean === 'DELHI' && dClean === 'BENGALURU') || (oClean === 'BENGALURU' && dClean === 'DELHI')) durMins = 170;
       else if ((oClean === 'VIJAYAWADA' && dClean === 'VISAKHAPATNAM') || (oClean === 'VISAKHAPATNAM' && dClean === 'VIJAYAWADA')) durMins = 60;
+      else if ((oClean === 'HYDERABAD' && dClean === 'VIJAYAWADA') || (oClean === 'VIJAYAWADA' && dClean === 'HYDERABAD')) durMins = 60;
 
       let totalMins = (h * 60) + m + durMins;
       totalMins = totalMins % (24 * 60);
@@ -436,8 +483,8 @@ export class FlightListComponent implements OnInit {
         f.carrierName.toLowerCase().includes(this.searchCarrierName.trim().toLowerCase());
 
       const matchDate = !this.searchScheduleDate || this.isFlightOperatingOnDate(f, this.searchScheduleDate);
-      const matchOrigin = !this.searchOrigin || f.origin === this.searchOrigin;
-      const matchDest = !this.searchDestination || f.destination === this.searchDestination;
+      const matchOrigin = !this.searchOrigin || this.normalizeCity(f.origin) === this.normalizeCity(this.searchOrigin);
+      const matchDest = !this.searchDestination || this.normalizeCity(f.destination) === this.normalizeCity(this.searchDestination);
 
       return matchCarrier && matchDate && matchOrigin && matchDest;
     });

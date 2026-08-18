@@ -673,9 +673,16 @@ export class BookFlightComponent implements OnInit {
       }
 
       const paramFlightId = this.route.snapshot.queryParams['flightId'];
+      const paramDate = this.route.snapshot.queryParams['date'];
+
       if (paramFlightId) {
         this.bookingForm.patchValue({ flightId: +paramFlightId });
         this.onFlightSelected();
+
+        if (paramDate) {
+          this.bookingForm.patchValue({ dateOfTravel: paramDate });
+          this.onDateOfTravelChanged();
+        }
       }
     });
 

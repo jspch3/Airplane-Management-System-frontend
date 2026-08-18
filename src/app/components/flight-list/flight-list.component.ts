@@ -134,7 +134,12 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 </td>
                 <td>
                   <div style="font-size: 0.875rem; color: var(--gray-800); display: flex; flex-direction: column; gap: 4px;">
-                    <div>📅 Date: <strong>{{ f.scheduleDate || 'Daily' }}</strong></div>
+                    <div>
+                      📅 {{ searchScheduleDate ? 'Operating Date:' : 'Schedule Date:' }} <strong>{{ getDisplayDateForFlight(f) }}</strong>
+                      <span *ngIf="searchScheduleDate && f.flightFrequency && f.flightFrequency !== 'SINGLE_DATE'" style="font-size: 0.75rem; color: #0284c7; font-weight: 700; margin-left: 4px;">
+                        (Base: {{ f.scheduleDate }})
+                      </span>
+                    </div>
                     <div style="font-size: 0.8rem; font-weight: 800; color: #475569;">
                       {{ getFrequencyLabel(f.flightFrequency) }}
                     </div>
@@ -163,7 +168,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                     <a
                       *ngIf="user && user.role === 'CUSTOMER' && !isFlightPassed(f)"
                       [routerLink]="['/book-flight']"
-                      [queryParams]="{ flightId: f.flightId, date: f.scheduleDate }"
+                      [queryParams]="{ flightId: f.flightId, date: getDisplayDateForFlight(f) }"
                       class="btn btn-primary btn-sm"
                       style="padding: 8px 16px; font-weight: 800;"
                     >
@@ -411,6 +416,13 @@ export class FlightListComponent implements OnInit {
     }
 
     return startStr === targetDateStr;
+  }
+
+  getDisplayDateForFlight(f: Flight): string {
+    if (this.searchScheduleDate && this.isFlightOperatingOnDate(f, this.searchScheduleDate)) {
+      return this.searchScheduleDate;
+    }
+    return f.scheduleDate || 'Daily';
   }
 
   applyFilters(): void {

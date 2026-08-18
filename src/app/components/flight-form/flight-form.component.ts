@@ -350,7 +350,7 @@ export class FlightFormComponent implements OnInit {
         this.flightForm.patchValue({
           ...f,
           scheduleDate: f.scheduleDate || this.todayDate,
-          flightFrequency: f.flightFrequency || 'DAILY',
+          flightFrequency: f.flightFrequency || 'SINGLE_DATE',
           departureTime: depTime,
           departurePeriod: depP,
           arrivalTime: arrTime,
@@ -530,7 +530,7 @@ export class FlightFormComponent implements OnInit {
       origin: formVal.origin,
       destination: formVal.destination,
       scheduleDate: formVal.scheduleDate,
-      flightFrequency: formVal.flightFrequency || 'DAILY',
+      flightFrequency: formVal.flightFrequency || 'SINGLE_DATE',
       departureTime: formattedDepTime,
       arrivalTime: formattedArrTime,
       airFare: Number(formVal.economyClassFare),

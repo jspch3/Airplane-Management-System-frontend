@@ -103,6 +103,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             <div class="form-group">
               <label class="form-label">Recurrence Theme / Frequency <span class="required">*</span></label>
               <select formControlName="flightFrequency" class="form-select">
+                <option value="SINGLE_DATE">📅 Single Date Only (One-Time Flight)</option>
                 <option value="DAILY">🗓️ Daily (Every Day)</option>
                 <option value="EVERY_3_DAYS">🗓️ Every 3 Days</option>
                 <option value="WEEKLY">🗓️ Weekly (Every 7 Days)</option>
@@ -299,7 +300,7 @@ export class FlightFormComponent implements OnInit {
         origin: ['Mumbai (BOM)', [Validators.required]],
         destination: ['Delhi (DEL)', [Validators.required]],
         scheduleDate: [this.todayDate, [Validators.required]],
-        flightFrequency: ['DAILY', [Validators.required]],
+        flightFrequency: ['SINGLE_DATE', [Validators.required]],
         departureTime: ['10:30', [Validators.required, Validators.pattern(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/)]],
         departurePeriod: ['AM', [Validators.required]],
         arrivalTime: ['12:45', [Validators.required]],

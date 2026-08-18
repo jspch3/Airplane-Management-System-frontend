@@ -287,10 +287,11 @@ export class FlightListComponent implements OnInit {
   }
 
   getFrequencyLabel(freq?: string): string {
+    if (freq === 'DAILY') return '🗓️ Daily (Every Day)';
     if (freq === 'EVERY_3_DAYS') return '🗓️ Every 3 Days';
     if (freq === 'WEEKLY') return '🗓️ Weekly (Every Week)';
     if (freq === 'MONTHLY') return '🗓️ Monthly (Every Month)';
-    return '🗓️ Daily (Every Day)';
+    return '📅 Single Date Only';
   }
 
   isFlightPassed(f: Flight): boolean {

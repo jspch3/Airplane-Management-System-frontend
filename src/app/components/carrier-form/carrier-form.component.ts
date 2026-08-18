@@ -51,7 +51,7 @@ import { Carrier } from '../../models/carrier.model';
         </div>
 
         <!-- Validation Errors Banner -->
-        <div *ngIf="serverError || carrierForm.errors" class="alert alert-danger" style="margin-bottom: 32px; flex-direction: column; align-items: flex-start; gap: 8px;">
+        <div *ngIf="serverError || carrierForm.errors" class="alert alert-danger" style="margin-bottom: 24px; flex-direction: column; align-items: flex-start; gap: 8px;">
           <div style="font-weight: 800;">⚠️ Validation Errors Detected:</div>
           <ul style="margin-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem;">
             <li *ngIf="serverError">❌ {{ serverError }}</li>
@@ -62,8 +62,21 @@ import { Carrier } from '../../models/carrier.model';
               Membership Tier Hierarchy: Silver &lt; Gold &lt; Platinum discount is required.
             </li>
             <li *ngIf="carrierForm.errors?.['refundHierarchyError']">
-              Refund Tier Hierarchy: &lt;2 Days &lt; 2-10 Days &lt; &ge;20 Days refund is required.
+              Refund Tier Hierarchy: &lt;2 Days &lt; 2-19 Days &lt; &ge;20 Days refund is required.
             </li>
+          </ul>
+        </div>
+
+        <!-- Carrier Rules Instructions Banner -->
+        <div class="alert alert-info" style="margin-bottom: 28px; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+            <span>ℹ️</span> Carrier Discount & Refund Rules & Instructions:
+          </div>
+          <ul style="margin-left: 24px; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem;">
+            <li>Bulk booking discount applies for <strong>more than 4 seats</strong> (up to max 40%).</li>
+            <li>Advance booking discounts must follow strict hierarchy: <strong>30-Day &lt; 60-Day &lt; 90-Day</strong> (each up to max 40%).</li>
+            <li>Customer membership discounts must follow strict hierarchy: <strong>Silver &lt; Gold &lt; Platinum</strong> (each up to max 40%).</li>
+            <li>Cancellation refund percentages: <strong>&lt;2 Days prior (max 20%) &lt; 2-19 Days prior (max 40%) &lt; &ge;20 Days prior (max 75%)</strong>.</li>
           </ul>
         </div>
 

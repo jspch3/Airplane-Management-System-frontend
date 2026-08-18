@@ -30,8 +30,17 @@ import { LoginResponse } from '../../models/user.model';
           Loading booking history records...
         </div>
 
-        <div *ngIf="!isLoading && bookings.length === 0" class="alert alert-warning">
-          No flight bookings found.
+        <!-- Cancellation Refund Rules Instructions Banner -->
+        <div class="alert alert-info" style="margin-bottom: 24px; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+            <span>ℹ️</span> Cancellation & Refund Rules:
+          </div>
+          <ul style="margin-left: 24px; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem;">
+            <li>Cancellation <strong>&ge; 20 days prior</strong> to travel date: Max <strong>75% refund</strong>.</li>
+            <li>Cancellation <strong>2 to 19 days prior</strong> to travel date: Max <strong>40% refund</strong>.</li>
+            <li>Cancellation <strong>&lt; 2 days prior</strong> to travel date (0 or 1 day prior): Max <strong>20% refund</strong>.</li>
+            <li>Cancellations are allowed per passenger; partial passenger cancellations recalculate proportional refunds.</li>
+          </ul>
         </div>
 
         <div *ngIf="!isLoading && bookings.length > 0" class="table-responsive">

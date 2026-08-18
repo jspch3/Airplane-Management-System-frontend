@@ -27,8 +27,21 @@ import { BookingRequest, Booking } from '../../models/booking.model';
           Select travel date & number of seats. Fill in mandatory passenger details (all ages 0-120). All fares in Indian Rupees (&#8377;).
         </p>
 
-        <div *ngIf="bookingError" class="alert alert-danger">
+        <div *ngIf="bookingError" class="alert alert-danger" style="margin-bottom: 20px;">
           ❌ {{ bookingError }}
+        </div>
+
+        <!-- Booking Instructions & Rules Banner -->
+        <div class="alert alert-info" style="margin-bottom: 28px; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+            <span>ℹ️</span> Ticket Booking Instructions & Booking Rules:
+          </div>
+          <ul style="margin-left: 24px; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem;">
+            <li>Customers can book a <strong>maximum of 6 tickets</strong> per booking transaction.</li>
+            <li>Bulk booking discount applies automatically for <strong>more than 4 seats</strong> (5 or 6 seats).</li>
+            <li>Travel date must be an operating date within the 3-month window; if today's departure time has passed, select <strong>tomorrow or an upcoming operating date</strong>.</li>
+            <li>Base fare prices include <strong>18% Aviation GST Tax</strong> calculated at checkout.</li>
+          </ul>
         </div>
 
         <form [formGroup]="bookingForm">

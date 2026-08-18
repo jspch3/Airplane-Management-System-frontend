@@ -26,7 +26,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           ✅ {{ successMsg }}
         </div>
 
-        <div *ngIf="serverError || flightForm.errors" class="alert alert-danger">
+        <div *ngIf="serverError || flightForm.errors" class="alert alert-danger" style="margin-bottom: 24px; flex-direction: column; align-items: flex-start; gap: 6px;">
           <div *ngIf="serverError">❌ {{ serverError }}</div>
           <div *ngIf="flightForm.errors?.['sameRoute']">
             ⚠️ Origin and Destination cities must be different.
@@ -43,6 +43,20 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           <div *ngIf="flightForm.errors?.['pastDepartureTime']">
             ⚠️ Departure time cannot be earlier than current local time for today's flight schedule.
           </div>
+        </div>
+
+        <!-- Flight Registration Instructions Banner -->
+        <div class="alert alert-info" style="margin-bottom: 28px; flex-direction: column; align-items: flex-start; gap: 8px;">
+          <div style="font-weight: 800; font-size: 0.95rem; display: flex; align-items: center; gap: 8px;">
+            <span>ℹ️</span> Flight Registration Instructions & Validation Rules:
+          </div>
+          <ul style="margin-left: 24px; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem;">
+            <li>Schedule start date must be scheduled within a <strong>3-month window from today</strong>.</li>
+            <li>Flights can be registered with recurrence themes: <strong>Single Date, Daily, Every 3 Days, Weekly, or Monthly</strong>.</li>
+            <li>Seat Capacity Hierarchy: <strong>Economy Seats &gt; Business Seats &gt; Executive Seats</strong> (each strictly between 1 and 1000).</li>
+            <li>Class Fare Pricing Hierarchy: <strong>Executive Fare &gt; Business Fare &gt; Economy Fare</strong>.</li>
+            <li>Departure time for today's flight schedule must not be in the past.</li>
+          </ul>
         </div>
 
         <form [formGroup]="flightForm" (ngSubmit)="onSubmit()">

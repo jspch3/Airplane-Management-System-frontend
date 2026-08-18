@@ -19,7 +19,7 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
           </div>
         </div>
         <p class="card-subtitle">
-          Fill in your passenger details below. Registration is open to customers aged 18 to 120 years.
+          Create a new customer passenger account.
         </p>
 
         <!-- Line-by-Line Registration Rules Info Banner (Pincode instruction removed) -->

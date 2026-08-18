@@ -19,7 +19,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           <span>✈️ Flight Schedule & Fare Configuration</span>
         </div>
         <p class="card-subtitle">
-          Register & update flight routes, departure/arrival times, schedule dates, and seat class fares (Rupees &#8377;).
+          Manage flight schedules, class fares, and seat capacities.
         </p>
 
         <div *ngIf="successMsg" class="alert alert-success">

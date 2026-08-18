@@ -24,7 +24,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
           </div>
         </div>
         <p class="card-subtitle">
-          Select travel date & number of seats. Fill in mandatory passenger details (all ages 0-120). All fares in Indian Rupees (&#8377;).
+          Book flight tickets for upcoming travel dates.
         </p>
 
         <div *ngIf="bookingError" class="alert alert-danger" style="margin-bottom: 20px;">

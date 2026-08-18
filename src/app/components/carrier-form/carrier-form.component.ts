@@ -31,21 +31,6 @@ import { Carrier } from '../../models/carrier.model';
           </div>
         </div>
 
-        <!-- Mandatory Rules Guidelines -->
-        <div class="alert alert-info" style="margin-bottom: 32px; flex-direction: column; align-items: flex-start; gap: 8px;">
-          <div style="font-weight: 800; font-size: 0.95rem;">📌 Mandatory Carrier Configuration Guidelines:</div>
-          <ul style="margin-left: 20px; margin-top: 4px; display: flex; flex-direction: column; gap: 6px; font-size: 0.875rem;">
-            <li>30-Day Advance Discount: 0% to 10% maximum</li>
-            <li>60-Day Advance Discount: 0% to 15% maximum (must be &gt; 30-day discount)</li>
-            <li>90-Day Advance Discount: 0% to 25% maximum (must be &gt; 60-day discount)</li>
-            <li>Bulk Booking Discount (&ge;10 Seats): 0% to 25% maximum</li>
-            <li>Silver Member Discount: 0% to 15% maximum</li>
-            <li>Gold Member Discount: 0% to 20% maximum (must be &gt; Silver discount)</li>
-            <li>Platinum Member Discount: 0% to 30% maximum (must be &gt; Gold discount)</li>
-            <li>Refund Percentages on Cancellation: 0% to 40% maximum</li>
-          </ul>
-        </div>
-
         <div *ngIf="successMsg" class="alert alert-success" style="margin-bottom: 32px;">
           ✅ {{ successMsg }}
         </div>

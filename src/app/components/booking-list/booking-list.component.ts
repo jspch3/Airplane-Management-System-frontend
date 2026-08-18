@@ -19,7 +19,7 @@ import { LoginResponse } from '../../models/user.model';
           </div>
         </div>
         <p class="card-subtitle">
-          View all confirmed flight bookings, print e-tickets (PDF), and manage passenger cancellations with automatic &#8377; INR refund calculation.
+          View flight booking records and print e-tickets.
         </p>
 
         <div *ngIf="cancellationSuccess" class="alert alert-success">

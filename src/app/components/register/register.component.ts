@@ -44,16 +44,16 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
         </div>
 
         <form [formGroup]="registerForm" (ngSubmit)="onSubmit()">
-          <!-- Full Name & Phone Number -->
-          <div class="grid-2">
+          <!-- Row 1: Full Name, Phone Number & Date of Birth -->
+          <div class="grid-3" style="gap: 24px;">
             <div class="form-group">
-              <label class="form-label">Full Name <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Full Name <span class="required">*</span></label>
               <input
                 type="text"
                 formControlName="fullName"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('fullName'), 'is-valid': isFieldValid('fullName') }"
-                placeholder="e.g. Sarah Connor (min 2 alphabetic characters)"
+                placeholder="e.g. Sarah Connor"
               />
               <div *ngIf="isFieldInvalid('fullName')" class="invalid-feedback">
                 <div *ngIf="f['fullName'].errors?.['required']">Full Name is required.</div>
@@ -64,28 +64,44 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Phone Number <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Phone Number <span class="required">*</span></label>
               <input
                 type="tel"
                 inputmode="numeric"
                 formControlName="phone"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('phone'), 'is-valid': isFieldValid('phone') }"
-                placeholder="10 digits starting with 6-9 (e.g. 9876543210)"
+                placeholder="10 digits starting with 6-9"
               />
               <div *ngIf="isFieldInvalid('phone')" class="invalid-feedback">
                 <div *ngIf="f['phone'].errors?.['required']">Phone number is required.</div>
                 <div *ngIf="f['phone'].errors?.['pattern']">
-                  Phone number must start with 6, 7, 8, or 9 and be exactly 10 digits.
+                  Must start with 6-9 and be exactly 10 digits.
                 </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Date of Birth (18-120 yrs) <span class="required">*</span></label>
+              <input
+                type="date"
+                formControlName="dob"
+                [min]="minDobDate"
+                [max]="maxDobDate"
+                class="form-control"
+                [ngClass]="{ 'is-invalid': isFieldInvalid('dob'), 'is-valid': isFieldValid('dob') }"
+              />
+              <div *ngIf="isFieldInvalid('dob')" class="invalid-feedback">
+                <div *ngIf="f['dob'].errors?.['required']">Date of birth is required.</div>
+                <div *ngIf="f['dob'].errors?.['ageRange']">Age must be between 18 and 120 years.</div>
               </div>
             </div>
           </div>
 
-          <!-- Username, Password & Confirm Password -->
-          <div class="grid-3">
+          <!-- Row 2: Username, Password & Confirm Password -->
+          <div class="grid-3" style="gap: 24px;">
             <div class="form-group">
-              <label class="form-label">Username <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Username <span class="required">*</span></label>
               <input
                 type="text"
                 formControlName="userName"
@@ -96,13 +112,13 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
               <div *ngIf="isFieldInvalid('userName')" class="invalid-feedback">
                 <div *ngIf="f['userName'].errors?.['required']">Username is required.</div>
                 <div *ngIf="f['userName'].errors?.['pattern']">
-                  Username must be 4-30 alphanumeric characters (symbols and underscores-only are rejected).
+                  Username must be 4-30 alphanumeric characters.
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Password <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Password <span class="required">*</span></label>
               <input
                 type="password"
                 formControlName="password"
@@ -113,13 +129,13 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
               <div *ngIf="isFieldInvalid('password')" class="invalid-feedback">
                 <div *ngIf="f['password'].errors?.['required']">Password is required.</div>
                 <div *ngIf="f['password'].errors?.['pattern']">
-                  Min 8 chars with 1 uppercase, 1 lowercase, 1 digit, and 1 special char (&#64;$!%*?&).
+                  Min 8 chars with 1 upper, 1 lower, 1 digit, 1 special.
                 </div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Confirm Password <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Confirm Password <span class="required">*</span></label>
               <input
                 type="password"
                 formControlName="confirmPassword"
@@ -128,16 +144,16 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
                 placeholder="••••••••"
               />
               <div *ngIf="isFieldInvalid('confirmPassword') || (f['confirmPassword'].touched && registerForm.errors?.['passwordMismatch'])" class="invalid-feedback">
-                <div *ngIf="f['confirmPassword'].errors?.['required']">Please confirm your password.</div>
+                <div *ngIf="f['confirmPassword'].errors?.['required']">Please confirm password.</div>
                 <div *ngIf="registerForm.errors?.['passwordMismatch']">Passwords do not match.</div>
               </div>
             </div>
           </div>
 
-          <!-- Customer Category & Email ID -->
-          <div class="grid-2">
+          <!-- Row 3: Customer Membership Tier & Email ID -->
+          <div class="grid-2" style="gap: 24px;">
             <div class="form-group">
-              <label class="form-label">Customer Membership Tier <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Customer Membership Tier <span class="required">*</span></label>
               <select formControlName="customerCategory" class="form-select">
                 <option value="REGULAR">Regular Tier (Standard Fares)</option>
                 <option value="SILVER">Silver Member (5% Tier Discount)</option>
@@ -146,9 +162,8 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
               </select>
             </div>
 
-            <!-- Email Prefix + Domain Dropdown -->
             <div class="form-group">
-              <label class="form-label">Email ID <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Email ID <span class="required">*</span></label>
               <div class="email-input-group">
                 <input
                   type="text"
@@ -172,10 +187,10 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
             </div>
           </div>
 
-          <!-- Address 1 & Address 2 -->
-          <div class="grid-2">
+          <!-- Row 4: Address Line 1 & Address Line 2 -->
+          <div class="grid-2" style="gap: 24px;">
             <div class="form-group">
-              <label class="form-label">Address Line 1 (5-100 chars) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Address Line 1 <span class="required">*</span></label>
               <input
                 type="text"
                 formControlName="address1"
@@ -186,12 +201,11 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
               <div *ngIf="isFieldInvalid('address1')" class="invalid-feedback">
                 <div *ngIf="f['address1'].errors?.['required']">Address line 1 is required.</div>
                 <div *ngIf="f['address1'].errors?.['minlength']">Address line 1 must be at least 5 characters.</div>
-                <div *ngIf="f['address1'].errors?.['maxlength']">Address line 1 cannot exceed 100 characters.</div>
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">Address Line 2 (Optional, max 100 chars)</label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Address Line 2 (Optional)</label>
               <input
                 type="text"
                 formControlName="address2"
@@ -199,16 +213,13 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
                 [ngClass]="{ 'is-invalid': isFieldInvalid('address2') }"
                 placeholder="Apt / Suite / Landmark"
               />
-              <div *ngIf="isFieldInvalid('address2')" class="invalid-feedback">
-                <div *ngIf="f['address2'].errors?.['maxlength']">Address line 2 cannot exceed 100 characters.</div>
-              </div>
             </div>
           </div>
 
-          <!-- City, State, Zip & DOB with >=18 and <=120 Age Check -->
-          <div class="grid-4">
+          <!-- Row 5: Zip Code, State & City -->
+          <div class="grid-3" style="gap: 24px;">
             <div class="form-group">
-              <label class="form-label">Zip Code (6 Digits) <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Zip Code (6 Digits) <span class="required">*</span></label>
               <input
                 type="text"
                 inputmode="numeric"
@@ -219,12 +230,12 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
                 placeholder="e.g. 400001"
               />
               <div *ngIf="isFieldInvalid('zipCode')" class="invalid-feedback">
-                Zip code must be a 6-digit Indian PIN code.
+                6-digit Indian PIN code required.
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">State <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">State <span class="required">*</span></label>
               <select
                 formControlName="state"
                 class="form-select"
@@ -234,47 +245,31 @@ import { INDIAN_STATES, lookupPincode } from '../../constants/location.data';
                 <option *ngFor="let st of indianStates" [value]="st">{{ st }}</option>
               </select>
               <div *ngIf="isFieldInvalid('state')" class="invalid-feedback">
-                Please select a valid Indian State/UT.
+                Please select State / UT.
               </div>
             </div>
 
             <div class="form-group">
-              <label class="form-label">City <span class="required">*</span></label>
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">City <span class="required">*</span></label>
               <input
                 type="text"
                 formControlName="city"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('city'), 'is-valid': isFieldValid('city') }"
-                placeholder="e.g. Mumbai (min 3 chars)"
+                placeholder="e.g. Mumbai"
               />
               <div *ngIf="isFieldInvalid('city')" class="invalid-feedback">
-                City is required (at least 3 alphabetic characters).
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label class="form-label">Date of Birth (18-120 yrs) <span class="required">*</span></label>
-              <input
-                type="date"
-                formControlName="dob"
-                [min]="minDobDate"
-                [max]="maxDobDate"
-                class="form-control"
-                [ngClass]="{ 'is-invalid': isFieldInvalid('dob'), 'is-valid': isFieldValid('dob') }"
-              />
-              <div *ngIf="isFieldInvalid('dob')" class="invalid-feedback">
-                <div *ngIf="f['dob'].errors?.['required']">Date of birth is required.</div>
-                <div *ngIf="f['dob'].errors?.['ageRange']">User age must be strictly between 18 and 120 years.</div>
+                City is required.
               </div>
             </div>
           </div>
 
-          <div style="margin-top: 24px; display: flex; align-items: center; justify-content: space-between;">
-            <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+          <div style="margin-top: 32px; display: flex; align-items: center; justify-content: space-between;">
+            <button type="submit" class="btn btn-primary" style="padding: 14px 28px; font-weight: 800;" [disabled]="isSubmitting">
               <span *ngIf="isSubmitting">Registering Account...</span>
               <span *ngIf="!isSubmitting">Complete Account Registration</span>
             </button>
-            <a routerLink="/login" style="color: var(--sky-blue); text-decoration: none; font-size: 0.95rem; font-weight: 500;">
+            <a routerLink="/login" style="color: var(--sky-blue); text-decoration: none; font-size: 0.95rem; font-weight: 700;">
               Already registered? Sign In &rarr;
             </a>
           </div>

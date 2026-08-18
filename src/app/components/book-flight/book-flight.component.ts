@@ -61,7 +61,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 <input
                   type="date"
                   formControlName="dateOfTravel"
-                  [min]="minDate"
+                  [min]="minTravelDate"
                   [max]="maxDate"
                   (change)="onDateOfTravelChanged()"
                   class="form-control"
@@ -793,6 +793,40 @@ export class BookFlightComponent implements OnInit {
     return f.arrivalTime;
   }
 
+  isPassedToday(flight?: Flight | null): boolean {
+    if (!flight || !flight.departureTime) return false;
+    try {
+      let depTimeStr = flight.departureTime;
+      let depP = 'AM';
+      if (depTimeStr.includes('PM')) { depP = 'PM'; depTimeStr = depTimeStr.replace('PM', '').trim(); }
+      else if (depTimeStr.includes('AM')) { depP = 'AM'; depTimeStr = depTimeStr.replace('AM', '').trim(); }
+
+      const parts = depTimeStr.split(':');
+      let hours = parseInt(parts[0], 10);
+      let minutes = parseInt(parts[1], 10);
+      if (isNaN(hours)) hours = 10;
+      if (isNaN(minutes)) minutes = 30;
+
+      if (depP === 'PM' && hours < 12) hours += 12;
+      if (depP === 'AM' && hours === 12) hours = 0;
+
+      const now = new Date();
+      const flightDepToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+      return now >= flightDepToday;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  get minTravelDate(): string {
+    if (this.selectedFlight && this.isPassedToday(this.selectedFlight)) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      return tomorrow.toISOString().split('T')[0];
+    }
+    return new Date().toISOString().split('T')[0];
+  }
+
   generateValidTravelDates(): void {
     this.validTravelDates = [];
     if (!this.selectedFlight) return;
@@ -800,20 +834,22 @@ export class BookFlightComponent implements OnInit {
     const startStr = this.selectedFlight.scheduleDate || new Date().toISOString().split('T')[0];
     const freq = this.selectedFlight.flightFrequency || 'SINGLE_DATE';
 
-    if (freq === 'SINGLE_DATE') {
-      this.validTravelDates = [startStr];
-      return;
-    }
-
-    const startDate = new Date(startStr);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const passedToday = this.isPassedToday(this.selectedFlight);
+
+    let minValidDate = new Date(today);
+    if (passedToday) {
+      minValidDate.setDate(minValidDate.getDate() + 1);
+    }
+
+    const startDate = new Date(startStr + 'T00:00:00');
     const threeMonthsOut = new Date();
     threeMonthsOut.setMonth(today.getMonth() + 3);
 
     let curr = new Date(startDate);
-    while (curr < today) {
+    while (curr < minValidDate) {
       if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
       else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
       else if (freq === 'WEEKLY') curr.setDate(curr.getDate() + 7);
@@ -823,7 +859,11 @@ export class BookFlightComponent implements OnInit {
 
     while (curr <= threeMonthsOut) {
       const iso = curr.toISOString().split('T')[0];
-      this.validTravelDates.push(iso);
+      const currObj = new Date(iso + 'T00:00:00');
+
+      if (currObj >= minValidDate) {
+        this.validTravelDates.push(iso);
+      }
 
       if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
       else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
@@ -835,7 +875,9 @@ export class BookFlightComponent implements OnInit {
     }
 
     if (this.validTravelDates.length === 0) {
-      this.validTravelDates = [startStr];
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      this.validTravelDates = [tomorrow.toISOString().split('T')[0]];
     }
   }
 
@@ -882,10 +924,18 @@ export class BookFlightComponent implements OnInit {
     const dateVal = this.bookingForm.value.dateOfTravel;
     if (!dateVal || !this.selectedFlight) return;
 
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    if (dateVal === todayStr && this.isPassedToday(this.selectedFlight)) {
+      const nextDate = this.validTravelDates[0] || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+      this.dateError = `⏰ Departure time (${this.selectedFlight.departureTime}) for today's flight (${dateVal}) has already passed. Please select tomorrow (${nextDate}) or an upcoming operating date.`;
+      return;
+    }
+
     if (!this.isFlightOperatingOnDate(this.selectedFlight, dateVal)) {
       const freqLabel = this.getFrequencyLabel(this.selectedFlight.flightFrequency);
       const validList = this.validTravelDates.slice(0, 4).join(', ');
-      this.dateError = `❌ Flight #${this.selectedFlight.flightId} does not operate on ${dateVal}. Schedule: ${freqLabel} starting from ${this.selectedFlight.scheduleDate}. Valid operating dates: ${validList}...`;
+      this.dateError = `❌ Flight #${this.selectedFlight.flightId} does not operate on ${dateVal}. Schedule: ${freqLabel}. Valid operating dates: ${validList}...`;
     } else {
       this.selectedQuickDate = dateVal;
       this.recalculateDiscounts();

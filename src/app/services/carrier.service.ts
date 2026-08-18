@@ -28,4 +28,8 @@ export class CarrierService {
   getCarrierById(carrierId: number): Observable<Carrier> {
     return this.http.get<Carrier>(`${this.apiUrl}/${carrierId}`);
   }
+
+  deleteCarrier(carrierId: number): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${carrierId}`);
+  }
 }

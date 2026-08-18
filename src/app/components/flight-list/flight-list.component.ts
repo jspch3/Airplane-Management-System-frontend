@@ -64,29 +64,38 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
               />
             </div>
 
+            <!-- Requirement 2: Strict 3-Month Date Window Filter -->
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label">Exact Travel Date</label>
+              <label class="form-label">Exact Travel Date (3-Month Window)</label>
               <input
                 type="date"
                 [(ngModel)]="searchScheduleDate"
+                [min]="minSearchDate"
+                [max]="maxSearchDate"
                 (change)="applyFilters()"
                 class="form-control"
               />
             </div>
 
+            <!-- Requirement 3: Mutual Exclusion for Origin City -->
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label">Filter Origin City</label>
               <select [(ngModel)]="searchOrigin" (change)="applyFilters()" class="form-select">
                 <option value="">All Origins</option>
-                <option *ngFor="let apt of majorAirports" [value]="apt">{{ apt }}</option>
+                <option *ngFor="let apt of majorAirports" [value]="apt" [disabled]="apt === searchDestination">
+                  {{ apt }} {{ apt === searchDestination ? '(Selected in Destination)' : '' }}
+                </option>
               </select>
             </div>
 
+            <!-- Requirement 3: Mutual Exclusion for Destination City -->
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label">Filter Destination City</label>
               <select [(ngModel)]="searchDestination" (change)="applyFilters()" class="form-select">
                 <option value="">All Destinations</option>
-                <option *ngFor="let apt of majorAirports" [value]="apt">{{ apt }}</option>
+                <option *ngFor="let apt of majorAirports" [value]="apt" [disabled]="apt === searchOrigin">
+                  {{ apt }} {{ apt === searchOrigin ? '(Selected in Origin)' : '' }}
+                </option>
               </select>
             </div>
           </div>
@@ -100,7 +109,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           No flights found matching your search filters.
         </div>
 
-        <!-- Flight Table with Spacious Cell Padding -->
+        <!-- Flight Table -->
         <div *ngIf="!isLoading && filteredFlights.length > 0" class="table-responsive" style="margin-bottom: 40px;">
           <table class="table">
             <thead>
@@ -146,9 +155,10 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                   </div>
                 </td>
                 <td>
-                  <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                  <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                    <!-- Requirement 1: Customer Book Option - Hidden if flight time has passed -->
                     <a
-                      *ngIf="user && user.role === 'CUSTOMER'"
+                      *ngIf="user && user.role === 'CUSTOMER' && !isFlightPassed(f)"
                       [routerLink]="['/book-flight']"
                       [queryParams]="{ flightId: f.flightId, date: f.scheduleDate }"
                       class="btn btn-primary btn-sm"
@@ -156,6 +166,15 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                     >
                       🎟️ Book Ticket
                     </a>
+
+                    <span
+                      *ngIf="user && user.role === 'CUSTOMER' && isFlightPassed(f)"
+                      class="badge"
+                      style="background: #f1f5f9; color: #64748b; font-weight: 700; border: 1.5px solid #cbd5e1; font-size: 0.8rem;"
+                    >
+                      ✈️ Departed / Boarded
+                    </span>
+
                     <a
                       *ngIf="user && user.role === 'ADMIN'"
                       [routerLink]="['/admin/flights/edit', f.flightId]"
@@ -227,6 +246,9 @@ export class FlightListComponent implements OnInit {
   searchOrigin = '';
   searchDestination = '';
 
+  minSearchDate = '';
+  maxSearchDate = '';
+
   isLoading = true;
   user: LoginResponse | null = null;
   actionMsg = '';
@@ -243,7 +265,14 @@ export class FlightListComponent implements OnInit {
     private authService: AuthService,
     private router: Router,
     private location: Location
-  ) {}
+  ) {
+    const today = new Date();
+    const threeMonthsLater = new Date();
+    threeMonthsLater.setMonth(today.getMonth() + 3);
+
+    this.minSearchDate = today.toISOString().split('T')[0];
+    this.maxSearchDate = threeMonthsLater.toISOString().split('T')[0];
+  }
 
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(u => this.user = u);
@@ -252,6 +281,33 @@ export class FlightListComponent implements OnInit {
 
   goBack(): void {
     this.location.back();
+  }
+
+  isFlightPassed(f: Flight): boolean {
+    if (!f.scheduleDate) return false;
+    try {
+      const dateParts = f.scheduleDate.split('-').map(Number);
+      if (dateParts.length !== 3) return false;
+
+      let depTimeStr = f.arrivalTime || f.departureTime || '10:30 AM';
+      let depP = 'AM';
+      if (depTimeStr.includes('PM')) { depP = 'PM'; depTimeStr = depTimeStr.replace('PM', '').trim(); }
+      else if (depTimeStr.includes('AM')) { depP = 'AM'; depTimeStr = depTimeStr.replace('AM', '').trim(); }
+
+      const parts = depTimeStr.split(':');
+      let hours = parseInt(parts[0], 10);
+      let minutes = parseInt(parts[1], 10);
+      if (isNaN(hours)) hours = 10;
+      if (isNaN(minutes)) minutes = 30;
+
+      if (depP === 'PM' && hours < 12) hours += 12;
+      if (depP === 'AM' && hours === 12) hours = 0;
+
+      const flightDateTime = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hours, minutes);
+      return new Date() >= flightDateTime;
+    } catch (e) {
+      return false;
+    }
   }
 
   loadAllFlights(): void {

@@ -174,30 +174,35 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             </div>
           </div>
 
-          <!-- Fare Calculation Breakdown Summary Box (INR ₹) -->
+          <!-- Sequential Fare Calculation Breakdown Summary Box (INR ₹) -->
           <div class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 2px solid var(--primary-blue); padding: 24px; margin-top: 24px;">
             <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 16px;">
-              📊 Live Fare & Tier Discount Calculation (Rupees &#8377;)
+              📊 Live Sequential Fare, 18% GST & Net Amount Calculation (Rupees &#8377;)
             </h4>
 
             <div style="display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px;">
-              <span>Base Ticket Price ({{ bookingForm.value.seatCategory }} Class x {{ bookingForm.value.noOfSeats }} seats):</span>
+              <span>Gross Base Ticket Price ({{ bookingForm.value.seatCategory }} Class x {{ bookingForm.value.noOfSeats }} seats):</span>
               <strong>&#8377;{{ grossAmount.toFixed(2) }}</strong>
             </div>
 
-            <div *ngIf="advanceDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
-              <span>Advance Booking Perks Discount:</span>
-              <strong>-&#8377;{{ advanceDiscountAmount.toFixed(2) }}</strong>
-            </div>
-
             <div *ngIf="tierDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
-              <span>Customer Category Tier Discount ({{ currentUser?.customerCategory }}):</span>
+              <span>1st Step: Customer Membership Tier Discount ({{ currentUser?.customerCategory }}):</span>
               <strong>-&#8377;{{ tierDiscountAmount.toFixed(2) }}</strong>
             </div>
 
             <div *ngIf="bulkDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
-              <span>Bulk Booking Discount (&ge;10 seats):</span>
+              <span>2nd Step: Bulk Booking Discount (&ge;10 seats):</span>
               <strong>-&#8377;{{ bulkDiscountAmount.toFixed(2) }}</strong>
+            </div>
+
+            <div *ngIf="advanceDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
+              <span>3rd Step: Advance Booking Perks Discount:</span>
+              <strong>-&#8377;{{ advanceDiscountAmount.toFixed(2) }}</strong>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: #0284c7; margin-bottom: 8px;">
+              <span>Add 18% Aviation GST Tax:</span>
+              <strong>+&#8377;{{ gstAmount.toFixed(2) }}</strong>
             </div>
 
             <hr class="hr-rule" style="margin: 16px 0;" />
@@ -541,6 +546,7 @@ export class BookFlightComponent implements OnInit {
   tierDiscountAmount = 0;
   bulkDiscountAmount = 0;
   totalDiscountAmount = 0;
+  gstAmount = 0;
   netPayableAmount = 0;
 
   showConfirmationModal = false;
@@ -690,9 +696,15 @@ export class BookFlightComponent implements OnInit {
     });
   }
 
+
+
   recalculateDiscounts(): void {
     if (!this.selectedFlight) {
       this.grossAmount = 0;
+      this.tierDiscountAmount = 0;
+      this.bulkDiscountAmount = 0;
+      this.advanceDiscountAmount = 0;
+      this.gstAmount = 0;
       this.netPayableAmount = 0;
       return;
     }
@@ -709,6 +721,26 @@ export class BookFlightComponent implements OnInit {
 
     this.grossAmount = baseFare * seats;
 
+    // 1. Membership Tier Discount (First)
+    let tierPct = 0;
+    const userCat = this.currentUser?.customerCategory?.toUpperCase();
+    if (this.selectedCarrier && userCat) {
+      if (userCat === 'SILVER') tierPct = this.selectedCarrier.silverUserDiscount || 0;
+      else if (userCat === 'GOLD') tierPct = this.selectedCarrier.goldUserDiscount || 0;
+      else if (userCat === 'PLATINUM') tierPct = this.selectedCarrier.platinumUserDiscount || 0;
+    }
+    this.tierDiscountAmount = (this.grossAmount * tierPct) / 100;
+    const priceAfterTier = Math.max(0, this.grossAmount - this.tierDiscountAmount);
+
+    // 2. Bulk Booking Discount (Second)
+    let bulkPct = 0;
+    if (seats >= 10 && this.selectedCarrier) {
+      bulkPct = this.selectedCarrier.bulkBookingDiscount || 0;
+    }
+    this.bulkDiscountAmount = (priceAfterTier * bulkPct) / 100;
+    const priceAfterBulk = Math.max(0, priceAfterTier - this.bulkDiscountAmount);
+
+    // 3. Advance Booking Discount (Third)
     let advPct = 0;
     if (this.bookingForm.value.dateOfTravel && this.selectedCarrier) {
       const travelDate = new Date(this.bookingForm.value.dateOfTravel);
@@ -719,25 +751,15 @@ export class BookFlightComponent implements OnInit {
       else if (diffDays >= 60) advPct = this.selectedCarrier.discount60DaysAdvanceBooking || 0;
       else if (diffDays >= 30) advPct = this.selectedCarrier.discount30DaysAdvanceBooking || 0;
     }
-    this.advanceDiscountAmount = (this.grossAmount * advPct) / 100;
+    this.advanceDiscountAmount = (priceAfterBulk * advPct) / 100;
+    const subtotalPrice = Math.max(this.grossAmount * 0.20, priceAfterBulk - this.advanceDiscountAmount);
 
-    let tierPct = 0;
-    const userCat = this.currentUser?.customerCategory?.toUpperCase();
-    if (this.selectedCarrier && userCat) {
-      if (userCat === 'SILVER') tierPct = this.selectedCarrier.silverUserDiscount || 0;
-      else if (userCat === 'GOLD') tierPct = this.selectedCarrier.goldUserDiscount || 0;
-      else if (userCat === 'PLATINUM') tierPct = this.selectedCarrier.platinumUserDiscount || 0;
-    }
-    this.tierDiscountAmount = (this.grossAmount * tierPct) / 100;
+    // 4. Add 18% Aviation GST Tax
+    this.gstAmount = subtotalPrice * 0.18;
 
-    let bulkPct = 0;
-    if (seats >= 10 && this.selectedCarrier) {
-      bulkPct = this.selectedCarrier.bulkBookingDiscount || 0;
-    }
-    this.bulkDiscountAmount = (this.grossAmount * bulkPct) / 100;
-
-    this.totalDiscountAmount = this.advanceDiscountAmount + this.tierDiscountAmount + this.bulkDiscountAmount;
-    this.netPayableAmount = Math.max(0, this.grossAmount - this.totalDiscountAmount);
+    // 5. Total Discount & Non-Zero Net Total Payable
+    this.totalDiscountAmount = this.tierDiscountAmount + this.bulkDiscountAmount + this.advanceDiscountAmount;
+    this.netPayableAmount = Math.max(500, subtotalPrice + this.gstAmount);
   }
 
   goBack(): void {

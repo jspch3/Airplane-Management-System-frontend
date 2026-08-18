@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule, Location } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { ReactiveFormsModule, FormsModule, FormBuilder, FormGroup, FormArray, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FlightService } from '../../services/flight.service';
 import { BookingService } from '../../services/booking.service';
@@ -14,7 +14,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
 @Component({
   selector: 'app-book-flight',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule],
   template: `
     <div style="max-width: 960px; margin: 0 auto;">
       <div class="card">
@@ -51,35 +51,45 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             <div class="form-group">
               <label class="form-label">
                 Date of Travel
-                <span *ngIf="selectedFlight?.flightFrequency && selectedFlight?.flightFrequency !== 'SINGLE_DATE'" class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; margin-left: 6px;">
+                <span *ngIf="selectedFlight?.flightFrequency" class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800; margin-left: 6px;">
                   {{ getFrequencyLabel(selectedFlight?.flightFrequency) }}
                 </span>
                 <span class="required">*</span>
               </label>
 
-              <select
-                *ngIf="validTravelDates.length > 1"
-                formControlName="dateOfTravel"
-                (change)="recalculateDiscounts()"
-                class="form-select"
-                style="font-weight: 700; color: var(--primary-navy);"
-              >
-                <option *ngFor="let dt of validTravelDates" [value]="dt">
-                  📅 {{ dt }} (Operating Flight Date)
-                </option>
-              </select>
+              <div style="display: flex; gap: 8px;">
+                <input
+                  type="date"
+                  formControlName="dateOfTravel"
+                  [min]="minDate"
+                  [max]="maxDate"
+                  (change)="onDateOfTravelChanged()"
+                  class="form-control"
+                  [ngClass]="{ 'is-invalid': isFieldInvalid('dateOfTravel') || !!dateError }"
+                  style="font-weight: 700; color: var(--primary-navy);"
+                />
 
-              <input
-                *ngIf="validTravelDates.length <= 1"
-                type="date"
-                formControlName="dateOfTravel"
-                readonly
-                style="background: #f1f5f9; cursor: not-allowed; font-weight: 700; color: var(--primary-navy);"
-                class="form-control"
-                [ngClass]="{ 'is-invalid': isFieldInvalid('dateOfTravel') }"
-              />
-              <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-                {{ validTravelDates.length > 1 ? '✨ Select from valid operating dates for this flight schedule.' : '🔒 Fixed to flight schedule date.' }}
+                <select
+                  *ngIf="validTravelDates.length > 1"
+                  [(ngModel)]="selectedQuickDate"
+                  [ngModelOptions]="{standalone: true}"
+                  (change)="onQuickDateSelected()"
+                  class="form-select"
+                  style="max-width: 220px; font-weight: 700; color: #0369a1;"
+                >
+                  <option value="">-- Quick Valid Dates --</option>
+                  <option *ngFor="let dt of validTravelDates" [value]="dt">
+                    📅 {{ dt }}
+                  </option>
+                </select>
+              </div>
+
+              <div *ngIf="dateError" class="invalid-feedback" style="display: block; margin-top: 6px; font-weight: 700;">
+                {{ dateError }}
+              </div>
+
+              <div *ngIf="!dateError" style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+                📅 Pick any date from calendar or use quick valid dates dropdown.
               </div>
             </div>
 
@@ -238,7 +248,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             <button type="button" (click)="goBack()" class="btn btn-secondary" style="padding: 12px 24px; font-weight: 700;">
               &larr; Back to Previous Page
             </button>
-            <button type="button" (click)="openConfirmationModal()" class="btn btn-primary" style="padding: 14px 28px; font-size: 1.05rem; font-weight: 800;">
+            <button type="button" (click)="openConfirmationModal()" class="btn btn-primary" style="padding: 14px 28px; font-size: 1.05rem; font-weight: 800;" [disabled]="!!dateError || bookingForm.invalid">
               🔍 Review Booking Summary &rarr;
             </button>
           </div>
@@ -588,6 +598,8 @@ export class BookFlightComponent implements OnInit {
   isSubmittingPayment = false;
   bookingError = '';
   paymentError = '';
+  dateError = '';
+  selectedQuickDate = '';
 
   constructor(
     private fb: FormBuilder,
@@ -809,6 +821,66 @@ export class BookFlightComponent implements OnInit {
     }
   }
 
+  isFlightOperatingOnDate(flight: Flight | null, targetDateStr: string): boolean {
+    if (!flight || !targetDateStr) return false;
+    if (!flight.scheduleDate) return false;
+
+    const startStr = flight.scheduleDate;
+    const freq = flight.flightFrequency || 'SINGLE_DATE';
+
+    if (freq === 'SINGLE_DATE') {
+      return startStr === targetDateStr;
+    }
+
+    const start = new Date(startStr + 'T00:00:00');
+    const target = new Date(targetDateStr + 'T00:00:00');
+
+    if (target < start) return false;
+
+    const diffTime = target.getTime() - start.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+    if (freq === 'DAILY') {
+      return diffDays >= 0;
+    }
+    if (freq === 'EVERY_3_DAYS') {
+      return diffDays >= 0 && diffDays % 3 === 0;
+    }
+    if (freq === 'WEEKLY') {
+      return diffDays >= 0 && diffDays % 7 === 0;
+    }
+    if (freq === 'MONTHLY') {
+      if (diffDays < 0) return false;
+      const dStart = start.getDate();
+      const dTarget = target.getDate();
+      return dStart === dTarget;
+    }
+
+    return startStr === targetDateStr;
+  }
+
+  onDateOfTravelChanged(): void {
+    this.dateError = '';
+    const dateVal = this.bookingForm.value.dateOfTravel;
+    if (!dateVal || !this.selectedFlight) return;
+
+    if (!this.isFlightOperatingOnDate(this.selectedFlight, dateVal)) {
+      const freqLabel = this.getFrequencyLabel(this.selectedFlight.flightFrequency);
+      const validList = this.validTravelDates.slice(0, 4).join(', ');
+      this.dateError = `❌ Flight #${this.selectedFlight.flightId} does not operate on ${dateVal}. Schedule: ${freqLabel} starting from ${this.selectedFlight.scheduleDate}. Valid operating dates: ${validList}...`;
+    } else {
+      this.selectedQuickDate = dateVal;
+      this.recalculateDiscounts();
+    }
+  }
+
+  onQuickDateSelected(): void {
+    if (this.selectedQuickDate) {
+      this.bookingForm.patchValue({ dateOfTravel: this.selectedQuickDate });
+      this.onDateOfTravelChanged();
+    }
+  }
+
   onFlightSelected(): void {
     const flightId = +this.bookingForm.value.flightId;
     this.selectedFlight = this.flights.find(f => f.flightId === flightId) || null;
@@ -824,6 +896,8 @@ export class BookFlightComponent implements OnInit {
         dateOfTravel: this.selectedFlight.scheduleDate
       });
     }
+
+    this.onDateOfTravelChanged();
 
     if (this.selectedFlight?.carrierId) {
       this.carrierService.getCarrierById(this.selectedFlight.carrierId).subscribe(c => {

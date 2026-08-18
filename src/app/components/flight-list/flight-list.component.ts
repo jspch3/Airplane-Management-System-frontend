@@ -375,6 +375,44 @@ export class FlightListComponent implements OnInit {
     return f.arrivalTime;
   }
 
+  isFlightOperatingOnDate(flight: Flight, targetDateStr: string): boolean {
+    if (!flight || !targetDateStr) return false;
+    if (!flight.scheduleDate) return false;
+
+    const startStr = flight.scheduleDate;
+    const freq = flight.flightFrequency || 'SINGLE_DATE';
+
+    if (freq === 'SINGLE_DATE') {
+      return startStr === targetDateStr;
+    }
+
+    const start = new Date(startStr + 'T00:00:00');
+    const target = new Date(targetDateStr + 'T00:00:00');
+
+    if (target < start) return false;
+
+    const diffTime = target.getTime() - start.getTime();
+    const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+    if (freq === 'DAILY') {
+      return diffDays >= 0;
+    }
+    if (freq === 'EVERY_3_DAYS') {
+      return diffDays >= 0 && diffDays % 3 === 0;
+    }
+    if (freq === 'WEEKLY') {
+      return diffDays >= 0 && diffDays % 7 === 0;
+    }
+    if (freq === 'MONTHLY') {
+      if (diffDays < 0) return false;
+      const dStart = start.getDate();
+      const dTarget = target.getDate();
+      return dStart === dTarget;
+    }
+
+    return startStr === targetDateStr;
+  }
+
   applyFilters(): void {
     this.filteredFlights = this.flights.filter(f => {
       // Exclude passed flights for CUSTOMERS
@@ -385,7 +423,7 @@ export class FlightListComponent implements OnInit {
       const matchCarrier = !this.searchCarrierName.trim() ||
         f.carrierName.toLowerCase().includes(this.searchCarrierName.trim().toLowerCase());
 
-      const matchDate = !this.searchScheduleDate || f.scheduleDate === this.searchScheduleDate;
+      const matchDate = !this.searchScheduleDate || this.isFlightOperatingOnDate(f, this.searchScheduleDate);
       const matchOrigin = !this.searchOrigin || f.origin === this.searchOrigin;
       const matchDest = !this.searchDestination || f.destination === this.searchDestination;
 

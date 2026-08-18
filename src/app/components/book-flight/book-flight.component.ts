@@ -70,7 +70,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 <span class="required">*</span>
               </label>
 
-              <div style="display: flex; gap: 8px;">
+              <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
                 <input
                   type="date"
                   formControlName="dateOfTravel"
@@ -79,22 +79,37 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                   (change)="onDateOfTravelChanged()"
                   class="form-control"
                   [ngClass]="{ 'is-invalid': isFieldInvalid('dateOfTravel') || !!dateError }"
-                  style="font-weight: 700; color: var(--primary-navy);"
+                  style="font-weight: 700; color: var(--primary-navy); flex: 1; min-width: 160px;"
                 />
 
                 <select
-                  *ngIf="validTravelDates.length > 1"
-                  [(ngModel)]="selectedQuickDate"
+                  *ngIf="validTravelDates.length > 0"
+                  [ngModel]="bookingForm.value.dateOfTravel"
                   [ngModelOptions]="{standalone: true}"
-                  (change)="onQuickDateSelected()"
+                  (change)="selectQuickDate($event)"
                   class="form-select"
-                  style="max-width: 220px; font-weight: 700; color: #0369a1;"
+                  style="max-width: 240px; font-weight: 700; color: #0369a1; background-color: #f0f9ff; border-color: #7dd3fc;"
                 >
-                  <option value="">-- Quick Valid Dates --</option>
+                  <option value="" disabled>-- Quick Operating Dates --</option>
                   <option *ngFor="let dt of validTravelDates" [value]="dt">
-                    📅 {{ dt }}
+                    📅 {{ dt }} {{ getQuickDateLabel(dt) }}
                   </option>
                 </select>
+              </div>
+
+              <!-- Quick Operating Date Pill Badges for One-Click Selection -->
+              <div *ngIf="validTravelDates.length > 0" style="margin-top: 10px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                <span style="font-size: 0.78rem; font-weight: 800; color: #475569; margin-right: 2px;">⚡ Quick Dates:</span>
+                <button
+                  type="button"
+                  *ngFor="let dt of validTravelDates.slice(0, 6)"
+                  (click)="setTravelDate(dt)"
+                  class="btn"
+                  [ngClass]="bookingForm.value.dateOfTravel === dt ? 'btn-primary' : 'btn-secondary'"
+                  style="padding: 3px 10px; font-size: 0.78rem; font-weight: 700; border-radius: 12px; margin-bottom: 2px;"
+                >
+                  📅 {{ dt }} {{ getQuickDateLabel(dt) }}
+                </button>
               </div>
 
               <div *ngIf="dateError" class="invalid-feedback" style="display: block; margin-top: 6px; font-weight: 700;">
@@ -102,7 +117,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
               </div>
 
               <div *ngIf="!dateError" style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-                📅 Pick any date from calendar or use quick valid dates dropdown.
+                📅 Pick any date from calendar or click quick operating dates above.
               </div>
             </div>
 
@@ -840,6 +855,39 @@ export class BookFlightComponent implements OnInit {
     return new Date().toISOString().split('T')[0];
   }
 
+  selectQuickDate(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    if (target && target.value) {
+      this.setTravelDate(target.value);
+    }
+  }
+
+  setTravelDate(dt: string): void {
+    this.bookingForm.patchValue({ dateOfTravel: dt });
+    this.selectedQuickDate = dt;
+    this.onDateOfTravelChanged();
+  }
+
+  getQuickDateLabel(dtStr: string): string {
+    if (!dtStr) return '';
+    const todayStr = new Date().toISOString().split('T')[0];
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    if (dtStr === todayStr) return '(Today)';
+    if (dtStr === tomorrowStr) return '(Tomorrow)';
+
+    try {
+      const parts = dtStr.split('-').map(Number);
+      const d = new Date(parts[0], parts[1] - 1, parts[2]);
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      return `(${days[d.getDay()]})`;
+    } catch (e) {
+      return '';
+    }
+  }
+
   generateValidTravelDates(): void {
     this.validTravelDates = [];
     if (!this.selectedFlight) return;
@@ -857,40 +905,60 @@ export class BookFlightComponent implements OnInit {
       minValidDate.setDate(minValidDate.getDate() + 1);
     }
 
-    const startDate = new Date(startStr + 'T00:00:00');
+    const startParts = startStr.split('-').map(Number);
+    const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+
     const threeMonthsOut = new Date();
     threeMonthsOut.setMonth(today.getMonth() + 3);
 
-    let curr = new Date(startDate);
-    while (curr < minValidDate) {
-      if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
-      else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
-      else if (freq === 'WEEKLY') curr.setDate(curr.getDate() + 7);
-      else if (freq === 'MONTHLY') curr.setMonth(curr.getMonth() + 1);
-      else break;
+    if (freq === 'SINGLE_DATE') {
+      if (startDate >= minValidDate && startDate <= threeMonthsOut) {
+        this.validTravelDates.push(startStr);
+      }
+      return;
     }
 
-    while (curr <= threeMonthsOut) {
-      const iso = curr.toISOString().split('T')[0];
-      const currObj = new Date(iso + 'T00:00:00');
+    let curr = new Date(startDate);
 
-      if (currObj >= minValidDate) {
+    // Fast-forward curr to >= minValidDate according to recurrence criteria
+    while (curr < minValidDate) {
+      if (freq === 'DAILY') {
+        curr.setDate(curr.getDate() + 1);
+      } else if (freq === 'EVERY_3_DAYS') {
+        curr.setDate(curr.getDate() + 3);
+      } else if (freq === 'WEEKLY') {
+        curr.setDate(curr.getDate() + 7);
+      } else if (freq === 'MONTHLY') {
+        curr.setMonth(curr.getMonth() + 1);
+      } else {
+        break;
+      }
+    }
+
+    // Collect all valid operating dates up to 3 months out
+    while (curr <= threeMonthsOut) {
+      const year = curr.getFullYear();
+      const month = String(curr.getMonth() + 1).padStart(2, '0');
+      const day = String(curr.getDate()).padStart(2, '0');
+      const iso = `${year}-${month}-${day}`;
+
+      if (!this.validTravelDates.includes(iso)) {
         this.validTravelDates.push(iso);
       }
 
-      if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
-      else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
-      else if (freq === 'WEEKLY') curr.setDate(curr.getDate() + 7);
-      else if (freq === 'MONTHLY') curr.setMonth(curr.getMonth() + 1);
-      else break;
+      if (freq === 'DAILY') {
+        curr.setDate(curr.getDate() + 1);
+      } else if (freq === 'EVERY_3_DAYS') {
+        curr.setDate(curr.getDate() + 3);
+      } else if (freq === 'WEEKLY') {
+        curr.setDate(curr.getDate() + 7);
+      } else if (freq === 'MONTHLY') {
+        curr.setMonth(curr.getMonth() + 1);
+      } else {
+        break;
+      }
 
       if (this.validTravelDates.length >= 90) break;
-    }
-
-    if (this.validTravelDates.length === 0) {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      this.validTravelDates = [tomorrow.toISOString().split('T')[0]];
     }
   }
 
@@ -905,8 +973,10 @@ export class BookFlightComponent implements OnInit {
       return startStr === targetDateStr;
     }
 
-    const start = new Date(startStr + 'T00:00:00');
-    const target = new Date(targetDateStr + 'T00:00:00');
+    const startParts = startStr.split('-').map(Number);
+    const targetParts = targetDateStr.split('-').map(Number);
+    const start = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+    const target = new Date(targetParts[0], targetParts[1] - 1, targetParts[2]);
 
     if (target < start) return false;
 
@@ -924,9 +994,7 @@ export class BookFlightComponent implements OnInit {
     }
     if (freq === 'MONTHLY') {
       if (diffDays < 0) return false;
-      const dStart = start.getDate();
-      const dTarget = target.getDate();
-      return dStart === dTarget;
+      return start.getDate() === target.getDate();
     }
 
     return startStr === targetDateStr;

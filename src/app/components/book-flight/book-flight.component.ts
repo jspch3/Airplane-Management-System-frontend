@@ -103,7 +103,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Number of Seats (1-10) <span class="required">*</span></label>
+              <label class="form-label">Number of Seats (1-6) <span class="required">*</span></label>
               <input
                 type="number"
                 formControlName="noOfSeats"
@@ -111,10 +111,10 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 (keyup)="onNoOfSeatsChanged()"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('noOfSeats') }"
-                min="1" max="10"
+                min="1" max="6"
               />
               <div *ngIf="isFieldInvalid('noOfSeats')" class="invalid-feedback">
-                Number of seats must be between 1 and 10.
+                A customer can book a maximum of 6 tickets only per transaction.
               </div>
             </div>
           </div>
@@ -221,7 +221,7 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             </div>
 
             <div *ngIf="bulkDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
-              <span>2nd Step: Bulk Booking Discount (&ge;10 seats):</span>
+              <span>2nd Step: Bulk Booking Discount (>4 seats):</span>
               <strong>-&#8377;{{ bulkDiscountAmount.toFixed(2) }}</strong>
             </div>
 
@@ -622,7 +622,7 @@ export class BookFlightComponent implements OnInit {
       flightId: ['', [Validators.required]],
       dateOfTravel: [this.minDate, [Validators.required, this.dateRangeValidator(this.minDate, this.maxDate)]],
       seatCategory: ['ECONOMY', [Validators.required]],
-      noOfSeats: [1, [Validators.required, Validators.min(1), Validators.max(10)]],
+      noOfSeats: [1, [Validators.required, Validators.min(1), Validators.max(6)]],
       passengers: this.fb.array([])
     });
 
@@ -976,9 +976,9 @@ export class BookFlightComponent implements OnInit {
     this.tierDiscountAmount = (this.grossAmount * tierPct) / 100;
     const priceAfterTier = Math.max(0, this.grossAmount - this.tierDiscountAmount);
 
-    // 2. Bulk Booking Discount (Second)
+    // 2. Bulk Booking Discount (Second - Applicable for >4 seats)
     let bulkPct = 0;
-    if (seats >= 10 && this.selectedCarrier) {
+    if (seats > 4 && this.selectedCarrier) {
       bulkPct = this.selectedCarrier.bulkBookingDiscount || 0;
     }
     this.bulkDiscountAmount = (priceAfterTier * bulkPct) / 100;

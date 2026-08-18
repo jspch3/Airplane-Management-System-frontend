@@ -91,7 +91,7 @@ import { Carrier } from '../../models/carrier.model';
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">Bulk Booking Discount % (&ge;10 Seats, Max 25%) <span class="required">*</span></label>
+                <label class="form-label">Bulk Booking Discount % (&gt;4 Seats, Max 25%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="bulkBookingDiscount"
@@ -218,12 +218,12 @@ import { Carrier } from '../../models/carrier.model';
           <!-- Section 4: Cancellation Refund Rules -->
           <div style="background: var(--gray-50); border: 1.5px solid var(--gray-200); padding: 28px; border-radius: 18px; margin-bottom: 36px;">
             <div style="font-weight: 800; color: var(--primary-navy); font-size: 1.05rem; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
-              🚫 Cancellation Refund Rules (% Refunded to Customer, Max 40%)
+              🚫 Cancellation Refund Rules (% Refunded to Customer)
             </div>
 
             <div class="grid-3" style="gap: 24px;">
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">&lt; 2 Days Prior Refund % (Max 40%) <span class="required">*</span></label>
+                <label class="form-label">&lt; 2 Days Prior Refund % (Max 20%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="refund2DaysPrior"
@@ -233,18 +233,18 @@ import { Carrier } from '../../models/carrier.model';
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('refund2DaysPrior')" class="invalid-feedback">
-                  Percentage must be between 0% and 40%.
+                  Percentage must be between 0% and 20%.
                 </div>
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">2 to 10 Days Prior Refund % (Max 40%) <span class="required">*</span></label>
+                <label class="form-label">2 to 19 Days Prior Refund % (Max 40%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="refund10DaysPrior"
                   class="form-control"
                   [ngClass]="{ 'is-invalid': isFieldInvalid('refund10DaysPrior') }"
-                  placeholder="e.g. 30.0"
+                  placeholder="e.g. 40.0"
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('refund10DaysPrior')" class="invalid-feedback">
@@ -253,17 +253,17 @@ import { Carrier } from '../../models/carrier.model';
               </div>
 
               <div class="form-group" style="margin-bottom: 0;">
-                <label class="form-label">&ge; 20 Days Prior Refund % (Max 40%) <span class="required">*</span></label>
+                <label class="form-label">&ge; 20 Days Prior Refund % (Max 75%) <span class="required">*</span></label>
                 <input
                   type="number"
                   formControlName="refund20DaysPrior"
                   class="form-control"
                   [ngClass]="{ 'is-invalid': isFieldInvalid('refund20DaysPrior') }"
-                  placeholder="e.g. 40.0"
+                  placeholder="e.g. 75.0"
                   step="0.1"
                 />
                 <div *ngIf="isFieldInvalid('refund20DaysPrior')" class="invalid-feedback">
-                  Percentage must be between 0% and 40%.
+                  Percentage must be between 0% and 75%.
                 </div>
               </div>
             </div>
@@ -307,9 +307,9 @@ export class CarrierFormComponent implements OnInit {
         discount60DaysAdvanceBooking: [10.0, [Validators.required, Validators.min(0), Validators.max(15)]],
         discount90DaysAdvanceBooking: [15.0, [Validators.required, Validators.min(0), Validators.max(25)]],
         bulkBookingDiscount: [10.0, [Validators.required, Validators.min(0), Validators.max(25)]],
-        refund2DaysPrior: [20.0, [Validators.required, Validators.min(0), Validators.max(40)]],
-        refund10DaysPrior: [30.0, [Validators.required, Validators.min(0), Validators.max(40)]],
-        refund20DaysPrior: [40.0, [Validators.required, Validators.min(0), Validators.max(40)]],
+        refund2DaysPrior: [20.0, [Validators.required, Validators.min(0), Validators.max(20)]],
+        refund10DaysPrior: [40.0, [Validators.required, Validators.min(0), Validators.max(40)]],
+        refund20DaysPrior: [75.0, [Validators.required, Validators.min(0), Validators.max(75)]],
         silverUserDiscount: [5.0, [Validators.required, Validators.min(0), Validators.max(15)]],
         goldUserDiscount: [10.0, [Validators.required, Validators.min(0), Validators.max(20)]],
         platinumUserDiscount: [15.0, [Validators.required, Validators.min(0), Validators.max(30)]]

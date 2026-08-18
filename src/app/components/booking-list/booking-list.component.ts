@@ -466,13 +466,13 @@ export class BookingListComponent implements OnInit {
   }
 
   getRefundPercentage(): number {
-    if (!this.activeBooking || !this.activeBooking.dateOfTravel) return 80;
+    if (!this.activeBooking || !this.activeBooking.dateOfTravel) return 20;
     const travelDate = new Date(this.activeBooking.dateOfTravel);
     const today = new Date();
     const diffDays = Math.ceil((travelDate.getTime() - today.getTime()) / (1000 * 3600 * 24));
 
-    if (diffDays >= 20) return 80;
-    if (diffDays >= 2) return 50;
+    if (diffDays >= 20) return 75;
+    if (diffDays >= 2) return 40;
     return 20;
   }
 

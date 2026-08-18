@@ -622,11 +622,44 @@ export class BookFlightComponent implements OnInit {
     });
   }
 
+  isFlightPassed(f: Flight): boolean {
+    if (!f.scheduleDate) return false;
+    try {
+      const dateParts = f.scheduleDate.split('-').map(Number);
+      if (dateParts.length !== 3) return false;
+
+      let depTimeStr = f.arrivalTime || f.departureTime || '10:30 AM';
+      let depP = 'AM';
+      if (depTimeStr.includes('PM')) { depP = 'PM'; depTimeStr = depTimeStr.replace('PM', '').trim(); }
+      else if (depTimeStr.includes('AM')) { depP = 'AM'; depTimeStr = depTimeStr.replace('AM', '').trim(); }
+
+      const parts = depTimeStr.split(':');
+      let hours = parseInt(parts[0], 10);
+      let minutes = parseInt(parts[1], 10);
+      if (isNaN(hours)) hours = 10;
+      if (isNaN(minutes)) minutes = 30;
+
+      if (depP === 'PM' && hours < 12) hours += 12;
+      if (depP === 'AM' && hours === 12) hours = 0;
+
+      const flightDateTime = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hours, minutes);
+      return new Date() >= flightDateTime;
+    } catch (e) {
+      return false;
+    }
+  }
+
   ngOnInit(): void {
     this.authService.currentUser$.subscribe(u => this.currentUser = u);
 
     this.flightService.getAllFlights().subscribe(fList => {
-      this.flights = fList;
+      // Filter out passed flights from dropdown for Customers
+      if (this.currentUser && this.currentUser.role === 'CUSTOMER') {
+        this.flights = fList.filter(f => !this.isFlightPassed(f));
+      } else {
+        this.flights = fList;
+      }
+
       const paramFlightId = this.route.snapshot.queryParams['flightId'];
       if (paramFlightId) {
         this.bookingForm.patchValue({ flightId: +paramFlightId });

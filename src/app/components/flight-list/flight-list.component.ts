@@ -135,6 +135,9 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 <td>
                   <div style="font-size: 0.875rem; color: var(--gray-800); display: flex; flex-direction: column; gap: 4px;">
                     <div>📅 Date: <strong>{{ f.scheduleDate || 'Daily' }}</strong></div>
+                    <div style="font-size: 0.8rem; font-weight: 800; color: #475569;">
+                      {{ getFrequencyLabel(f.flightFrequency) }}
+                    </div>
                     <div style="color: #0284c7; font-weight: 700;">
                       🕒 Dep: {{ f.departureTime || '10:30 AM' }} &nbsp;|&nbsp; 🛬 Arr: {{ f.arrivalTime || '01:45 PM' }}
                     </div>
@@ -281,6 +284,13 @@ export class FlightListComponent implements OnInit {
 
   goBack(): void {
     this.location.back();
+  }
+
+  getFrequencyLabel(freq?: string): string {
+    if (freq === 'EVERY_3_DAYS') return '🗓️ Every 3 Days';
+    if (freq === 'WEEKLY') return '🗓️ Weekly (Every Week)';
+    if (freq === 'MONTHLY') return '🗓️ Monthly (Every Month)';
+    return '🗓️ Daily (Every Day)';
   }
 
   isFlightPassed(f: Flight): boolean {

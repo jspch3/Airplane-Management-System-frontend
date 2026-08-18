@@ -80,13 +80,13 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
           </div>
 
-          <!-- Schedule Date & Timings -->
-          <div class="section-divider">Flight Schedule Date & Distance Timings</div>
+          <!-- Schedule Date, Frequency Theme & Distance Timings -->
+          <div class="section-divider">Flight Schedule Date, Recurrence Theme & Distance Timings</div>
           <hr class="hr-rule" />
 
-          <div class="grid-3">
+          <div class="grid-4" style="gap: 20px;">
             <div class="form-group">
-              <label class="form-label">Schedule Date <span class="required">*</span></label>
+              <label class="form-label">Schedule Start Date <span class="required">*</span></label>
               <input
                 type="date"
                 formControlName="scheduleDate"
@@ -98,6 +98,16 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
               <div *ngIf="isFieldInvalid('scheduleDate')" class="invalid-feedback">
                 Mandatory schedule date required (today or future date).
               </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Recurrence Theme / Frequency <span class="required">*</span></label>
+              <select formControlName="flightFrequency" class="form-select">
+                <option value="DAILY">🗓️ Daily (Every Day)</option>
+                <option value="EVERY_3_DAYS">🗓️ Every 3 Days</option>
+                <option value="WEEKLY">🗓️ Weekly (Every 7 Days)</option>
+                <option value="MONTHLY">🗓️ Monthly (Every Month)</option>
+              </select>
             </div>
 
             <div class="form-group">
@@ -122,7 +132,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             </div>
 
             <div class="form-group">
-              <label class="form-label">Calculated Arrival Time (Distance Auto) <span class="required">*</span></label>
+              <label class="form-label">Calculated Arrival Time <span class="required">*</span></label>
               <div style="display: flex; gap: 8px;">
                 <input
                   type="text"
@@ -289,6 +299,7 @@ export class FlightFormComponent implements OnInit {
         origin: ['Mumbai (BOM)', [Validators.required]],
         destination: ['Delhi (DEL)', [Validators.required]],
         scheduleDate: [this.todayDate, [Validators.required]],
+        flightFrequency: ['DAILY', [Validators.required]],
         departureTime: ['10:30', [Validators.required, Validators.pattern(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/)]],
         departurePeriod: ['AM', [Validators.required]],
         arrivalTime: ['12:45', [Validators.required]],
@@ -338,6 +349,7 @@ export class FlightFormComponent implements OnInit {
         this.flightForm.patchValue({
           ...f,
           scheduleDate: f.scheduleDate || this.todayDate,
+          flightFrequency: f.flightFrequency || 'DAILY',
           departureTime: depTime,
           departurePeriod: depP,
           arrivalTime: arrTime,
@@ -517,6 +529,7 @@ export class FlightFormComponent implements OnInit {
       origin: formVal.origin,
       destination: formVal.destination,
       scheduleDate: formVal.scheduleDate,
+      flightFrequency: formVal.flightFrequency || 'DAILY',
       departureTime: formattedDepTime,
       arrivalTime: formattedArrTime,
       airFare: Number(formVal.economyClassFare),

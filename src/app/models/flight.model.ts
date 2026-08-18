@@ -17,4 +17,5 @@ export interface Flight {
   bookedSeatsBusinessClass?: number;
   bookedSeatsEconomyClass?: number;
   bookedSeatsExecutiveClass?: number;
+  flightFrequency?: string;
 }

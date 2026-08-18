@@ -91,12 +91,13 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 type="date"
                 formControlName="scheduleDate"
                 [min]="todayDate"
+                [max]="maxScheduleDate"
                 (change)="onRouteOrTimeChanged()"
                 class="form-control"
                 [ngClass]="{ 'is-invalid': isFieldInvalid('scheduleDate') }"
               />
               <div *ngIf="isFieldInvalid('scheduleDate')" class="invalid-feedback">
-                Mandatory schedule date required (today or future date).
+                Schedule date must be within 3 months from today (between {{ todayDate }} and {{ maxScheduleDate }}).
               </div>
             </div>
 
@@ -284,7 +285,8 @@ export class FlightFormComponent implements OnInit {
   originCities: string[] = [];
   destinationCities: string[] = [];
 
-  todayDate = new Date().toISOString().split('T')[0];
+  todayDate: string;
+  maxScheduleDate: string;
 
   constructor(
     private fb: FormBuilder,
@@ -294,12 +296,19 @@ export class FlightFormComponent implements OnInit {
     private router: Router,
     private location: Location
   ) {
+    const today = new Date();
+    const threeMonthsOut = new Date();
+    threeMonthsOut.setMonth(today.getMonth() + 3);
+
+    this.todayDate = today.toISOString().split('T')[0];
+    this.maxScheduleDate = threeMonthsOut.toISOString().split('T')[0];
+
     this.flightForm = this.fb.group(
       {
         carrierId: ['', [Validators.required]],
         origin: ['Mumbai (BOM)', [Validators.required]],
         destination: ['Delhi (DEL)', [Validators.required]],
-        scheduleDate: [this.todayDate, [Validators.required]],
+        scheduleDate: [this.todayDate, [Validators.required, this.dateRangeValidator(this.todayDate, this.maxScheduleDate)]],
         flightFrequency: ['SINGLE_DATE', [Validators.required]],
         departureTime: ['10:30', [Validators.required, Validators.pattern(/^(0?[1-9]|1[0-2]):[0-5][0-9]$/)]],
         departurePeriod: ['AM', [Validators.required]],
@@ -500,6 +509,14 @@ export class FlightFormComponent implements OnInit {
     }
 
     return null;
+  }
+
+  dateRangeValidator(min: string, max: string) {
+    return (control: AbstractControl): ValidationErrors | null => {
+      if (!control.value) return null;
+      const val = control.value;
+      return (val >= min && val <= max) ? null : { outOfRange: true };
+    };
   }
 
   isFieldInvalid(field: string): boolean {

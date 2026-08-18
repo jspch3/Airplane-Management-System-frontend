@@ -220,13 +220,27 @@ import { LoginResponse } from '../../models/user.model';
           </div>
 
           <!-- Payment Summary -->
-          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px solid var(--gray-200); padding-top: 16px;">
-            <div>
-              <span style="font-size: 0.85rem; color: var(--gray-600);">Payment Method: <strong>{{ printableBooking.paymentMethod || 'SECURE ONLINE' }}</strong></span>
+          <div style="background: var(--gray-50); border: 1.5px solid var(--gray-200); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+            <div style="font-weight: 800; color: var(--primary-navy); font-size: 0.95rem; margin-bottom: 8px;">💳 Billing & Tax Breakdown Summary (INR &#8377;):</div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--gray-700); margin-bottom: 4px;">
+              <span>Gross Base Fare:</span>
+              <strong>&#8377;{{ (printableBooking.grossAmount || 0).toFixed(2) }}</strong>
             </div>
-            <div style="text-align: right;">
-              <span style="font-size: 0.9rem; color: var(--gray-600);">Total Amount Paid: </span>
-              <span style="font-size: 1.4rem; font-weight: 900; color: var(--accent-emerald);">&#8377;{{ (printableBooking.netPayableAmount || printableBooking.bookingAmount || 0).toFixed(2) }} INR</span>
+            <div *ngIf="(printableBooking.totalDiscountAmount || 0) > 0" style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--accent-emerald); margin-bottom: 4px;">
+              <span>Total Discounts Applied:</span>
+              <strong>-&#8377;{{ (printableBooking.totalDiscountAmount || 0).toFixed(2) }}</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #0284c7; margin-bottom: 4px;">
+              <span>18% Aviation GST Tax:</span>
+              <strong>+&#8377;{{ (printableBooking.gstAmount || ((printableBooking.grossAmount - (printableBooking.totalDiscountAmount || 0)) * 0.18) || 0).toFixed(2) }}</strong>
+            </div>
+            <hr style="margin: 8px 0; border: none; border-top: 1px dashed var(--gray-300);" />
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.85rem; color: var(--gray-600);">Payment Method: <strong>{{ printableBooking.paymentMethod || 'SECURE ONLINE' }}</strong></span>
+              <div style="text-align: right;">
+                <span style="font-size: 0.9rem; color: var(--gray-600);">Total Amount Paid: </span>
+                <span style="font-size: 1.35rem; font-weight: 900; color: var(--accent-emerald);">&#8377;{{ (printableBooking.netPayableAmount || printableBooking.bookingAmount || 0).toFixed(2) }} INR</span>
+              </div>
             </div>
           </div>
         </div>

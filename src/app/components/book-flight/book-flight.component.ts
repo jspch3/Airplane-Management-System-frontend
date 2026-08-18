@@ -542,6 +542,10 @@ import { BookingRequest, Booking } from '../../models/booking.model';
                 <span>Bulk Booking Discount:</span>
                 <strong>-&#8377;{{ (confirmedBooking.bulkDiscountAmount || bulkDiscountAmount).toFixed(2) }}</strong>
               </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.925rem; color: #0284c7; margin-bottom: 6px;">
+                <span>18% Aviation GST Tax:</span>
+                <strong>+&#8377;{{ (confirmedBooking.gstAmount || gstAmount || 0).toFixed(2) }}</strong>
+              </div>
               <hr style="margin: 12px 0; border: 0; border-top: 1.5px solid #86efac;" />
               <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 900; color: #14532d;">
                 <span>Total Net Amount Paid:</span>

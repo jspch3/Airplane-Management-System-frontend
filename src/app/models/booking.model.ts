@@ -44,6 +44,8 @@ export interface Booking {
   advanceDiscountAmount: number;
   tierDiscountAmount: number;
   bulkDiscountAmount: number;
+  totalDiscountAmount?: number;
+  gstAmount?: number;
   bookingAmount: number;
   netPayableAmount: number;
   refundAmount: number;

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { Booking, BookingRequest } from '../models/booking.model';
 
@@ -33,12 +33,13 @@ export class BookingService {
     return this.http.get<Booking>(`${this.apiUrl}/${bookingId}`);
   }
 
-  cancelPartialOrFull(bookingId: number, passengerIds: number[]): Observable<Booking> {
-    return this.http.post<Booking>(`${this.apiUrl}/${bookingId}/cancel`, { passengerIds });
+  cancelPartialOrFull(bookingId: number, body: { passengerIds: number[] }, role?: string): Observable<Booking> {
+    const headers = role ? new HttpHeaders({ 'X-User-Role': role }) : undefined;
+    return this.http.post<Booking>(`${this.apiUrl}/${bookingId}/cancel`, body, { headers });
   }
 
   cancelPartialBooking(bookingId: number, passengerIds: number[]): Observable<Booking> {
-    return this.cancelPartialOrFull(bookingId, passengerIds);
+    return this.cancelPartialOrFull(bookingId, { passengerIds });
   }
 
   getAvailableSeats(flightId: number, date: string, category: string): Observable<number> {

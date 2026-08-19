@@ -197,6 +197,19 @@ import { Carrier } from '../../models/carrier.model';
           </button>
         </div>
       </div>
+    <!-- Error Modal Popup for Deletion Failures -->
+    <div *ngIf="showErrorModal" class="modal-backdrop" style="z-index: 1060;">
+      <div class="modal-content" style="max-width: 440px; padding: 32px; border-radius: 20px; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
+        <h3 style="font-weight: 800; color: #ef4444; margin-bottom: 12px;">Carrier Deletion Error</h3>
+        <p style="color: #475569; font-size: 0.95rem; font-weight: 600; margin-bottom: 24px;">
+          {{ popupErrorMessage }}
+        </p>
+        <button (click)="closeErrorModal()" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; border-radius: 12px;">
+          OK, Understood
+        </button>
+      </div>
+    </div>
     </div>
   `
 })
@@ -208,6 +221,8 @@ export class CarrierListComponent implements OnInit {
 
   showViewModal = false;
   showDeleteModal = false;
+  showErrorModal = false;
+  popupErrorMessage = '';
   activeCarrier: Carrier | null = null;
   isDeleting = false;
 
@@ -256,6 +271,10 @@ export class CarrierListComponent implements OnInit {
     this.activeCarrier = null;
   }
 
+  closeErrorModal(): void {
+    this.showErrorModal = false;
+  }
+
   executeDeleteCarrier(): void {
     if (!this.activeCarrier?.carrierId) return;
 
@@ -275,10 +294,11 @@ export class CarrierListComponent implements OnInit {
         this.isDeleting = false;
         const msg = err.error?.message || err.message || '';
         if (msg.includes("active flights") || msg.includes("active") || msg.includes("500") || msg.includes("Internal")) {
-          this.actionError = "We can't delete the carrier, it has active flights.";
+          this.popupErrorMessage = "We can't delete the carrier, it has active flights.";
         } else {
-          this.actionError = msg || "We can't delete the carrier, it has active flights.";
+          this.popupErrorMessage = msg || "We can't delete the carrier, it has active flights.";
         }
+        this.showErrorModal = true;
         this.closeDeleteModal();
       }
     });

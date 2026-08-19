@@ -119,9 +119,9 @@ import { LoginResponse } from '../../models/user.model';
                       🖨️ Print Ticket
                     </button>
 
-                    <!-- Customer Cancel Option: Disabled/Hidden if journey is completed or cancelled by admin -->
+                    <!-- Cancel Ticket Option: Available for both Customer and Admin -->
                     <button
-                      *ngIf="user && user.role === 'CUSTOMER' && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled' && b.bookingStatus !== 'CANCELLED_BY_ADMIN' && !isJourneyCompleted(b)"
+                      *ngIf="b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled' && b.bookingStatus !== 'CANCELLED_BY_ADMIN' && !isJourneyCompleted(b)"
                       (click)="openCancelModal(b)"
                       class="btn btn-danger btn-sm"
                       style="padding: 6px 10px; font-size: 0.8rem;"
@@ -280,7 +280,11 @@ import { LoginResponse } from '../../models/user.model';
           <button (click)="closeCancelModal()" class="btn btn-outline" style="padding: 2px 8px;">✕</button>
         </div>
 
-        <div class="info-banner" style="margin-bottom: 16px;">
+        <div *ngIf="user && user.role === 'ADMIN'" class="info-banner" style="margin-bottom: 16px; background: #fffbebfb; border-color: #fcd34d; color: #b45309; font-weight: 700;">
+          👑 Admin Cancellation Notice: Cancelling this customer ticket as Administrator will issue a <strong>100% Full Refund</strong> (&#8377;{{ (activeBooking.netPayableAmount || activeBooking.bookingAmount || 0).toFixed(2) }}) to the customer account.
+        </div>
+
+        <div *ngIf="!user || user.role !== 'ADMIN'" class="info-banner" style="margin-bottom: 16px;">
           Select passenger(s) below to cancel from Booking #{{ activeBooking.bookingId }}. Proportional refund (&#8377;) will be automatically calculated.
         </div>
 
@@ -586,11 +590,13 @@ export class BookingListComponent implements OnInit {
 
     this.cancelError = '';
     this.isSubmittingCancel = true;
+    this.cancelError = '';
 
-    this.bookingService.cancelPartialBooking(this.activeBooking.bookingId, this.selectedPassengerIds).subscribe({
+    const role = this.user?.role || 'CUSTOMER';
+    this.bookingService.cancelPartialOrFull(this.activeBooking.bookingId, { passengerIds: this.selectedPassengerIds }, role).subscribe({
       next: (res: Booking) => {
         this.isSubmittingCancel = false;
-        this.cancellationSuccess = `Cancellation processed successfully! Refund of \u20B9${res.refundAmount.toFixed(2)} issued.`;
+        this.cancellationSuccess = `Cancellation processed successfully! Refund of \u20B9${(res.refundAmount || 0).toFixed(2)} issued.`;
         this.closeCancelModal();
         this.loadBookings();
       },

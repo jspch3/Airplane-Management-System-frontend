@@ -223,12 +223,63 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                     >
                       🗑️ Delete
                     </button>
+                    <button
+                      *ngIf="user && user.role === 'ADMIN'"
+                      (click)="openAdminCancelScheduleModal(f)"
+                      class="btn btn-warning btn-sm"
+                      style="padding: 8px 14px; font-weight: 800; background: #fffbebfb; color: #b45309; border: 1.5px solid #fcd34d;"
+                    >
+                      🚫 Cancel Schedule
+                    </button>
                   </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
+
+    <!-- Admin Cancel Flight Schedule Modal Dialog -->
+    <div *ngIf="showAdminCancelModal && selectedFlightForCancel" class="modal-backdrop" style="z-index: 1060;">
+      <div class="modal-content" style="max-width: 520px; padding: 32px; border-radius: 20px;">
+        <div style="font-size: 1.25rem; font-weight: 800; color: #b45309; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+          🚫 Cancel Flight Schedule for #AMS-{{ selectedFlightForCancel.flightId }}
+        </div>
+        <p style="color: #475569; font-size: 0.88rem; margin-bottom: 20px;">
+          Cancelling a flight schedule will issue a <strong>100% Full Refund</strong> to all booked passengers and notify customer accounts.
+        </p>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label">Target Travel Date <span class="required">*</span></label>
+          <input type="date" [(ngModel)]="adminCancelDate" class="form-control" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label class="form-label">Cancellation Reason / Announcement <span class="required">*</span></label>
+          <textarea [(ngModel)]="adminCancelReason" rows="3" class="form-control" placeholder="E.g. Severe Weather Warning / Operational Maintenance"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button (click)="closeAdminCancelModal()" class="btn btn-secondary">Cancel</button>
+          <button (click)="executeAdminCancelSchedule()" [disabled]="isCancellingSchedule" class="btn btn-danger" style="font-weight: 800;">
+            {{ isCancellingSchedule ? 'Processing Refund...' : '🚫 Confirm Cancellation & 100% Refund' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Flight Delete Error Modal Popup -->
+    <div *ngIf="showErrorModal" class="modal-backdrop" style="z-index: 1060;">
+      <div class="modal-content" style="max-width: 440px; padding: 32px; border-radius: 20px; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
+        <h3 style="font-weight: 800; color: #ef4444; margin-bottom: 12px;">Flight Deletion Error</h3>
+        <p style="color: #475569; font-size: 0.95rem; font-weight: 600; margin-bottom: 24px;">
+          {{ popupErrorMessage }}
+        </p>
+        <button (click)="closeErrorModal()" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; border-radius: 12px;">
+          OK, Understood
+        </button>
+      </div>
+    </div>
 
         <div style="margin-top: 36px; border-top: 1.5px solid var(--gray-200); padding-top: 24px;">
           <button type="button" (click)="goBack()" class="btn btn-secondary" style="padding: 12px 24px; font-weight: 700;">
@@ -678,6 +729,54 @@ export class FlightListComponent implements OnInit {
     return f.scheduleDate || 'Daily';
   }
 
+  showErrorModal = false;
+  popupErrorMessage = '';
+  showAdminCancelModal = false;
+  selectedFlightForCancel: Flight | null = null;
+  adminCancelDate = '';
+  adminCancelReason = '';
+  isCancellingSchedule = false;
+
+  closeErrorModal(): void {
+    this.showErrorModal = false;
+  }
+
+  openAdminCancelScheduleModal(f: Flight): void {
+    this.selectedFlightForCancel = f;
+    this.adminCancelDate = this.getDisplayDateForFlight(f);
+    this.adminCancelReason = 'Severe Operational Maintenance / Flight Cancellation';
+    this.showAdminCancelModal = true;
+  }
+
+  closeAdminCancelModal(): void {
+    this.showAdminCancelModal = false;
+    this.selectedFlightForCancel = null;
+  }
+
+  executeAdminCancelSchedule(): void {
+    if (!this.selectedFlightForCancel?.flightId || !this.adminCancelDate) return;
+    this.isCancellingSchedule = true;
+
+    this.bookingService.cancelFlightDate(
+      this.selectedFlightForCancel.flightId,
+      this.adminCancelDate,
+      this.adminCancelReason
+    ).subscribe({
+      next: (cancelledList) => {
+        this.isCancellingSchedule = false;
+        this.actionMsg = `Flight #${this.selectedFlightForCancel?.flightId} schedule for ${this.adminCancelDate} was cancelled. ${cancelledList.length} booking(s) refunded 100%.`;
+        this.closeAdminCancelModal();
+        this.loadAllFlights();
+      },
+      error: (err) => {
+        this.isCancellingSchedule = false;
+        this.popupErrorMessage = err.error?.message || err.message || 'Failed to cancel flight schedule.';
+        this.showErrorModal = true;
+        this.closeAdminCancelModal();
+      }
+    });
+  }
+
   openDeleteModal(flight: Flight): void {
     this.flightToDelete = flight;
     this.showDeleteModal = true;
@@ -708,10 +807,11 @@ export class FlightListComponent implements OnInit {
         this.isDeleting = false;
         const msg = err.error?.message || err.message || '';
         if (msg.includes("active users") || msg.includes("active") || msg.includes("500") || msg.includes("Internal")) {
-          this.actionError = "We can't delete the flight, it has active users.";
+          this.popupErrorMessage = "We can't delete the flight, it has active users.";
         } else {
-          this.actionError = msg || "We can't delete the flight, it has active users.";
+          this.popupErrorMessage = msg || "We can't delete the flight, it has active users.";
         }
+        this.showErrorModal = true;
         this.closeDeleteModal();
       }
     });

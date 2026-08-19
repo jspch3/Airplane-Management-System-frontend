@@ -40,10 +40,10 @@ import { LoginResponse, User } from '../../models/user.model';
       </div>
 
       <!-- Key System Metrics Cards -->
-      <div class="grid-4" style="margin-bottom: 32px;">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 32px;">
         <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid var(--primary-blue);">
           <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Registered Carriers</div>
-          <div style="font-size: 2.2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
+          <div style="font-size: 2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
             {{ totalCarriers }}
           </div>
           <a routerLink="/admin/carriers" style="font-size: 0.825rem; font-weight: 700; color: var(--primary-blue); text-decoration: none;">Manage Carriers &rarr;</a>
@@ -51,15 +51,15 @@ import { LoginResponse, User } from '../../models/user.model';
 
         <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid var(--info-sky);">
           <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Active Flights</div>
-          <div style="font-size: 2.2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
+          <div style="font-size: 2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
             {{ totalFlights }}
           </div>
           <a routerLink="/flights" style="font-size: 0.825rem; font-weight: 700; color: var(--primary-blue); text-decoration: none;">View Flight Schedule &rarr;</a>
         </div>
 
         <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid var(--accent-emerald);">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Total System Bookings</div>
-          <div style="font-size: 2.2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
+          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Total Bookings</div>
+          <div style="font-size: 2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
             {{ totalBookings }}
           </div>
           <a routerLink="/bookings" style="font-size: 0.825rem; font-weight: 700; color: var(--accent-emerald); text-decoration: none;">View All Bookings &rarr;</a>
@@ -67,12 +67,22 @@ import { LoginResponse, User } from '../../models/user.model';
 
         <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid #8b5cf6;">
           <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Registered Users</div>
-          <div style="font-size: 2.2rem; font-weight: 900; color: #6d28d9; margin: 4px 0;">
+          <div style="font-size: 2rem; font-weight: 900; color: #6d28d9; margin: 4px 0;">
             {{ totalUsers }}
           </div>
           <button (click)="openUsersModal()" style="font-size: 0.825rem; font-weight: 800; color: #6d28d9; background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline;">
             View Registered Users &rarr;
           </button>
+        </div>
+
+        <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid #10b981; background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);">
+          <div style="font-size: 0.75rem; font-weight: 800; color: #047857; text-transform: uppercase;">Total Revenue</div>
+          <div style="font-size: 1.85rem; font-weight: 900; color: #065f46; margin: 4px 0; word-break: break-all;">
+            &#8377;{{ totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+          </div>
+          <a routerLink="/bookings" style="font-size: 0.8rem; font-weight: 700; color: #059669; text-decoration: none;">
+            💰 Net Revenue (INR) &rarr;
+          </a>
         </div>
       </div>
 
@@ -194,6 +204,7 @@ export class AdminDashboardComponent implements OnInit {
   totalFlights = 0;
   totalBookings = 0;
   totalUsers = 0;
+  totalRevenue = 0;
 
   showUsersModal = false;
   registeredUsers: User[] = [];
@@ -213,7 +224,13 @@ export class AdminDashboardComponent implements OnInit {
 
     this.carrierService.getAllCarriers().subscribe(c => this.totalCarriers = c.length);
     this.flightService.getAllFlights().subscribe(f => this.totalFlights = f.length);
-    this.bookingService.getAllBookings().subscribe(bList => this.totalBookings = bList.length);
+    this.bookingService.getAllBookings().subscribe(bList => {
+      this.totalBookings = bList.length;
+      this.totalRevenue = bList.reduce((sum, b) => {
+        const net = (b.netPayableAmount || b.bookingAmount || 0) - (b.refundAmount || 0);
+        return sum + Math.max(0, net);
+      }, 0);
+    });
     this.authService.getUserCount().subscribe(c => this.totalUsers = c);
   }
 

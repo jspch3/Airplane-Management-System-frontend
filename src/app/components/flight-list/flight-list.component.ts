@@ -55,7 +55,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
           <div class="grid-4" style="gap: 24px; align-items: flex-end;">
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter by Carrier</label>
-              <select [(ngModel)]="searchCarrierName" (change)="applyFilters()" class="form-select">
+              <select [(ngModel)]="searchCarrierName" (change)="onCarrierFilterChanged()" class="form-select">
                 <option value="">All Available Carriers</option>
                 <option *ngFor="let c of availableCarriers" [value]="c">
                   🏢 {{ c }}
@@ -71,7 +71,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 [(ngModel)]="searchScheduleDate"
                 [min]="minSearchDate"
                 [max]="maxSearchDate"
-                (change)="applyFilters()"
+                (change)="onDateFilterChanged()"
                 class="form-control"
               />
             </div>
@@ -79,7 +79,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             <!-- Requirement 3: Mutual Exclusion for Origin City -->
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter Origin City</label>
-              <select [(ngModel)]="searchOrigin" (change)="applyFilters()" class="form-select">
+              <select [(ngModel)]="searchOrigin" (change)="onOriginFilterChanged()" class="form-select">
                 <option value="">All Available Origins</option>
                 <option *ngFor="let apt of availableOrigins" [value]="apt" [disabled]="apt === searchDestination">
                   🛫 {{ apt }} {{ apt === searchDestination ? '(Selected in Destination)' : '' }}
@@ -90,13 +90,37 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             <!-- Requirement 3: Mutual Exclusion for Destination City -->
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter Destination City</label>
-              <select [(ngModel)]="searchDestination" (change)="applyFilters()" class="form-select">
+              <select [(ngModel)]="searchDestination" (change)="onDestinationFilterChanged()" class="form-select">
                 <option value="">All Available Destinations</option>
                 <option *ngFor="let apt of availableDestinations" [value]="apt" [disabled]="apt === searchOrigin">
                   🛬 {{ apt }} {{ apt === searchOrigin ? '(Selected in Origin)' : '' }}
                 </option>
               </select>
             </div>
+          </div>
+
+          <!-- Quick Operating Date Pill Badges for Selected Carrier & Route -->
+          <div *ngIf="availableFilterDates.length > 0" style="margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--gray-300); display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 0.82rem; font-weight: 800; color: #0369a1;">⚡ Carrier Operating Dates:</span>
+            <button
+              type="button"
+              *ngFor="let dt of availableFilterDates"
+              (click)="setSearchDate(dt)"
+              class="btn"
+              [ngClass]="searchScheduleDate === dt ? 'btn-primary' : 'btn-secondary'"
+              style="padding: 4px 12px; font-size: 0.8rem; font-weight: 700; border-radius: 14px;"
+            >
+              📅 {{ dt }}
+            </button>
+            <button
+              type="button"
+              *ngIf="searchScheduleDate"
+              (click)="clearSearchDate()"
+              class="btn btn-outline"
+              style="padding: 4px 10px; font-size: 0.78rem; font-weight: 700; border-radius: 14px; border-color: #ef4444; color: #ef4444;"
+            >
+              ✕ Clear Date
+            </button>
           </div>
         </div>
 
@@ -376,21 +400,122 @@ export class FlightListComponent implements OnInit {
   availableCarriers: string[] = [];
   availableOrigins: string[] = [];
   availableDestinations: string[] = [];
+  availableFilterDates: string[] = [];
 
-  extractAvailableFilterOptions(): void {
+  onCarrierFilterChanged(): void {
+    this.applyFilters();
+  }
+
+  onDateFilterChanged(): void {
+    this.applyFilters();
+  }
+
+  onOriginFilterChanged(): void {
+    this.applyFilters();
+  }
+
+  onDestinationFilterChanged(): void {
+    this.applyFilters();
+  }
+
+  setSearchDate(dt: string): void {
+    this.searchScheduleDate = dt;
+    this.applyFilters();
+  }
+
+  clearSearchDate(): void {
+    this.searchScheduleDate = '';
+    this.applyFilters();
+  }
+
+  updateCascadingFilterOptions(): void {
+    // 1. Available Carriers: Flights matching Date, Origin, Destination
     const carriersSet = new Set<string>();
-    const originsSet = new Set<string>();
-    const destsSet = new Set<string>();
-
     this.flights.forEach(f => {
-      if (f.carrierName) carriersSet.add(f.carrierName);
-      if (f.origin) originsSet.add(f.origin);
-      if (f.destination) destsSet.add(f.destination);
+      if (this.user && this.user.role === 'CUSTOMER' && this.isFlightPassed(f)) return;
+
+      const matchDate = !this.searchScheduleDate || this.isFlightOperatingOnDate(f, this.searchScheduleDate);
+      const matchOrigin = !this.searchOrigin || this.normalizeCity(f.origin) === this.normalizeCity(this.searchOrigin);
+      const matchDest = !this.searchDestination || this.normalizeCity(f.destination) === this.normalizeCity(this.searchDestination);
+
+      if (matchDate && matchOrigin && matchDest && f.carrierName) {
+        carriersSet.add(f.carrierName);
+      }
+    });
+    this.availableCarriers = Array.from(carriersSet).sort();
+
+    // 2. Available Origins: Flights matching Carrier, Date, Destination
+    const originsSet = new Set<string>();
+    this.flights.forEach(f => {
+      if (this.user && this.user.role === 'CUSTOMER' && this.isFlightPassed(f)) return;
+
+      const matchCarrier = !this.searchCarrierName || f.carrierName === this.searchCarrierName;
+      const matchDate = !this.searchScheduleDate || this.isFlightOperatingOnDate(f, this.searchScheduleDate);
+      const matchDest = !this.searchDestination || this.normalizeCity(f.destination) === this.normalizeCity(this.searchDestination);
+
+      if (matchCarrier && matchDate && matchDest && f.origin) {
+        originsSet.add(f.origin);
+      }
+    });
+    this.availableOrigins = Array.from(originsSet).sort();
+
+    // 3. Available Destinations: Flights matching Carrier, Date, Origin
+    const destsSet = new Set<string>();
+    this.flights.forEach(f => {
+      if (this.user && this.user.role === 'CUSTOMER' && this.isFlightPassed(f)) return;
+
+      const matchCarrier = !this.searchCarrierName || f.carrierName === this.searchCarrierName;
+      const matchDate = !this.searchScheduleDate || this.isFlightOperatingOnDate(f, this.searchScheduleDate);
+      const matchOrigin = !this.searchOrigin || this.normalizeCity(f.origin) === this.normalizeCity(this.searchOrigin);
+
+      if (matchCarrier && matchDate && matchOrigin && f.destination) {
+        destsSet.add(f.destination);
+      }
+    });
+    this.availableDestinations = Array.from(destsSet).sort();
+
+    // 4. Calculate available operating dates for current selected carrier/origin/dest
+    this.computeAvailableFilterDates();
+  }
+
+  computeAvailableFilterDates(): void {
+    const matchingFlights = this.flights.filter(f => {
+      const matchCarrier = !this.searchCarrierName || f.carrierName === this.searchCarrierName;
+      const matchOrigin = !this.searchOrigin || this.normalizeCity(f.origin) === this.normalizeCity(this.searchOrigin);
+      const matchDest = !this.searchDestination || this.normalizeCity(f.destination) === this.normalizeCity(this.searchDestination);
+      return matchCarrier && matchOrigin && matchDest;
     });
 
-    this.availableCarriers = Array.from(carriersSet).sort();
-    this.availableOrigins = Array.from(originsSet).sort();
-    this.availableDestinations = Array.from(destsSet).sort();
+    const datesSet = new Set<string>();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const threeMonths = new Date();
+    threeMonths.setMonth(today.getMonth() + 3);
+
+    matchingFlights.forEach(f => {
+      const startStr = f.scheduleDate || today.toISOString().split('T')[0];
+      const freq = f.flightFrequency || 'SINGLE_DATE';
+      const startParts = startStr.split('-').map(Number);
+      let curr = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+
+      while (curr <= threeMonths) {
+        if (curr >= today) {
+          const iso = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+          if (this.isFlightOperatingOnDate(f, iso) && (!this.user || this.user.role !== 'CUSTOMER' || !this.isFlightPassed(f, iso))) {
+            datesSet.add(iso);
+          }
+        }
+        if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
+        else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
+        else if (freq === 'WEEKLY') curr.setDate(curr.getDate() + 7);
+        else if (freq === 'MONTHLY') curr.setMonth(curr.getMonth() + 1);
+        else break;
+
+        if (datesSet.size >= 12) break;
+      }
+    });
+
+    this.availableFilterDates = Array.from(datesSet).sort().slice(0, 8);
   }
 
   loadAllFlights(): void {
@@ -398,11 +523,39 @@ export class FlightListComponent implements OnInit {
     this.flightService.getAllFlights().subscribe({
       next: (data: Flight[]) => {
         this.flights = data;
-        this.extractAvailableFilterOptions();
         this.applyFilters();
         this.isLoading = false;
       },
       error: () => this.isLoading = false
+    });
+  }
+
+  applyFilters(): void {
+    this.updateCascadingFilterOptions();
+
+    // Auto-reset invalid choices if selection is no longer available in cascade
+    if (this.searchCarrierName && !this.availableCarriers.includes(this.searchCarrierName)) {
+      this.searchCarrierName = '';
+    }
+    if (this.searchOrigin && !this.availableOrigins.includes(this.searchOrigin)) {
+      this.searchOrigin = '';
+    }
+    if (this.searchDestination && !this.availableDestinations.includes(this.searchDestination)) {
+      this.searchDestination = '';
+    }
+
+    this.filteredFlights = this.flights.filter(f => {
+      // Exclude passed flights for CUSTOMERS
+      if (this.user && this.user.role === 'CUSTOMER' && this.isFlightPassed(f)) {
+        return false;
+      }
+
+      const matchCarrier = !this.searchCarrierName || f.carrierName === this.searchCarrierName;
+      const matchDate = !this.searchScheduleDate || this.isFlightOperatingOnDate(f, this.searchScheduleDate);
+      const matchOrigin = !this.searchOrigin || this.normalizeCity(f.origin) === this.normalizeCity(this.searchOrigin);
+      const matchDest = !this.searchDestination || this.normalizeCity(f.destination) === this.normalizeCity(this.searchDestination);
+
+      return matchCarrier && matchDate && matchOrigin && matchDest;
     });
   }
 
@@ -491,24 +644,6 @@ export class FlightListComponent implements OnInit {
       return this.searchScheduleDate;
     }
     return f.scheduleDate || 'Daily';
-  }
-
-  applyFilters(): void {
-    this.filteredFlights = this.flights.filter(f => {
-      // Exclude passed flights for CUSTOMERS
-      if (this.user && this.user.role === 'CUSTOMER' && this.isFlightPassed(f)) {
-        return false;
-      }
-
-      const matchCarrier = !this.searchCarrierName.trim() ||
-        f.carrierName.toLowerCase().includes(this.searchCarrierName.trim().toLowerCase());
-
-      const matchDate = !this.searchScheduleDate || this.isFlightOperatingOnDate(f, this.searchScheduleDate);
-      const matchOrigin = !this.searchOrigin || this.normalizeCity(f.origin) === this.normalizeCity(this.searchOrigin);
-      const matchDest = !this.searchDestination || this.normalizeCity(f.destination) === this.normalizeCity(this.searchDestination);
-
-      return matchCarrier && matchDate && matchOrigin && matchDest;
-    });
   }
 
   openDeleteModal(flight: Flight): void {

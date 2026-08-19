@@ -39,82 +39,101 @@ import { LoginResponse, User } from '../../models/user.model';
         </div>
       </div>
 
-      <!-- Key System Metrics Cards -->
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin-bottom: 32px;">
-        <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid var(--primary-blue);">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Registered Carriers</div>
-          <div style="font-size: 2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
+      <!-- Tier 1: System Operation Metrics (3 Columns) -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 24px;">
+        <div class="card" style="margin: 0; padding: 26px; border-left: 5px solid #0284c7; box-shadow: var(--shadow-md); border-radius: 16px;">
+          <div style="font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Registered Carriers</div>
+          <div style="font-size: 2.4rem; font-weight: 900; color: #0f172a; margin-bottom: 12px; line-height: 1;">
             {{ totalCarriers }}
           </div>
-          <a routerLink="/admin/carriers" style="font-size: 0.825rem; font-weight: 700; color: var(--primary-blue); text-decoration: none;">Manage Carriers &rarr;</a>
+          <a routerLink="/admin/carriers" style="font-size: 0.875rem; font-weight: 800; color: #0284c7; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            Manage Carriers &rarr;
+          </a>
         </div>
 
-        <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid var(--info-sky);">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Active Flights</div>
-          <div style="font-size: 2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
+        <div class="card" style="margin: 0; padding: 26px; border-left: 5px solid #06b6d4; box-shadow: var(--shadow-md); border-radius: 16px;">
+          <div style="font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Active Flights</div>
+          <div style="font-size: 2.4rem; font-weight: 900; color: #0f172a; margin-bottom: 12px; line-height: 1;">
             {{ totalFlights }}
           </div>
-          <a routerLink="/flights" style="font-size: 0.825rem; font-weight: 700; color: var(--primary-blue); text-decoration: none;">View Flight Schedule &rarr;</a>
+          <a routerLink="/flights" style="font-size: 0.875rem; font-weight: 800; color: #0891b2; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            View Flight Schedule &rarr;
+          </a>
         </div>
 
-        <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid var(--accent-emerald);">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Total Bookings</div>
-          <div style="font-size: 2rem; font-weight: 900; color: var(--primary-navy); margin: 4px 0;">
+        <div class="card" style="margin: 0; padding: 26px; border-left: 5px solid #10b981; box-shadow: var(--shadow-md); border-radius: 16px;">
+          <div style="font-size: 0.8rem; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Total Bookings</div>
+          <div style="font-size: 2.4rem; font-weight: 900; color: #0f172a; margin-bottom: 12px; line-height: 1;">
             {{ totalBookings }}
           </div>
-          <a routerLink="/bookings" style="font-size: 0.825rem; font-weight: 700; color: var(--accent-emerald); text-decoration: none;">View All Bookings &rarr;</a>
-        </div>
-
-        <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid #8b5cf6;">
-          <div style="font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">Registered Users</div>
-          <div style="font-size: 2rem; font-weight: 900; color: #6d28d9; margin: 4px 0;">
-            {{ totalUsers }}
-          </div>
-          <button (click)="openUsersModal()" style="font-size: 0.825rem; font-weight: 800; color: #6d28d9; background: none; border: none; padding: 0; cursor: pointer; text-decoration: underline;">
-            View Registered Users &rarr;
-          </button>
-        </div>
-
-        <div class="card" style="margin: 0; padding: 22px; border-left: 4px solid #10b981; background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%);">
-          <div style="font-size: 0.75rem; font-weight: 800; color: #047857; text-transform: uppercase;">Total Revenue</div>
-          <div style="font-size: 1.85rem; font-weight: 900; color: #065f46; margin: 4px 0; word-break: break-all;">
-            &#8377;{{ totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
-          </div>
-          <a routerLink="/bookings" style="font-size: 0.8rem; font-weight: 700; color: #059669; text-decoration: none;">
-            💰 Net Revenue (INR) &rarr;
+          <a routerLink="/bookings" style="font-size: 0.875rem; font-weight: 800; color: #059669; text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            View All Bookings &rarr;
           </a>
         </div>
       </div>
 
-      <!-- Quick Action Panels for Admin -->
-      <div style="margin-bottom: 16px;">
-        <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--primary-navy);">⚙️ System Administration Actions</h3>
+      <!-- Tier 2: Accounts & Revenue Metrics (2 Columns, Spacious & Prominent) -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; margin-bottom: 36px;">
+        <div class="card" style="margin: 0; padding: 28px; border-left: 5px solid #8b5cf6; box-shadow: var(--shadow-md); border-radius: 16px; background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 800; color: #6d28d9; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Registered Users</div>
+              <div style="font-size: 2.6rem; font-weight: 900; color: #5b21b6; margin-bottom: 12px; line-height: 1;">
+                {{ totalUsers }}
+              </div>
+            </div>
+            <div style="font-size: 2.5rem; opacity: 0.8;">👥</div>
+          </div>
+          <button (click)="openUsersModal()" style="font-size: 0.875rem; font-weight: 800; color: #6d28d9; background: #f5f3ff; border: 1px solid #ddd6fe; padding: 8px 16px; border-radius: 10px; cursor: pointer;">
+            Inspect Registered Users &rarr;
+          </button>
+        </div>
+
+        <div class="card" style="margin: 0; padding: 28px; border-left: 5px solid #059669; box-shadow: var(--shadow-md); border-radius: 16px; background: linear-gradient(135deg, #ecfdf5 0%, #ffffff 100%); border: 1.5px solid #a7f3d0;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div style="font-size: 0.8rem; font-weight: 800; color: #047857; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px;">Total Net System Revenue</div>
+              <div style="font-size: 2.4rem; font-weight: 900; color: #065f46; margin-bottom: 12px; line-height: 1; letter-spacing: -0.02em;">
+                &#8377;{{ totalRevenue.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+              </div>
+            </div>
+            <div style="font-size: 2.5rem; opacity: 0.85;">💰</div>
+          </div>
+          <div style="font-size: 0.825rem; font-weight: 700; color: #059669; display: flex; align-items: center; gap: 6px;">
+            <span>✓ Net Earnings after full/partial customer refunds</span>
+          </div>
+        </div>
       </div>
 
-      <div class="grid-4" style="margin-bottom: 32px;">
-        <a routerLink="/admin/carriers" class="card" style="text-decoration: none; padding: 24px; transition: transform 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200);">
-          <div style="font-size: 2rem; margin-bottom: 10px;">⚙️</div>
-          <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">Carrier Management</h4>
-          <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">Register new airline carriers, configure tier discounts and advance booking rules.</p>
+      <!-- Quick Action Panels for Admin -->
+      <div style="margin-bottom: 18px;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: var(--primary-navy);">⚙️ System Administration Actions</h3>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 20px; margin-bottom: 36px;">
+        <a routerLink="/admin/carriers" class="card" style="text-decoration: none; padding: 26px; border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200);">
+          <div style="font-size: 2.2rem; margin-bottom: 12px;">⚙️</div>
+          <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 8px;">Carrier Management</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">Register new airline carriers, configure tier discounts and advance booking rules.</p>
         </a>
 
-        <a routerLink="/admin/flights/new" class="card" style="text-decoration: none; padding: 24px; transition: transform 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200);">
-          <div style="font-size: 2rem; margin-bottom: 10px;">➕</div>
-          <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">Register New Flight</h4>
-          <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">Configure departure/arrival cities, schedule dates, timings, and seat class fares.</p>
+        <a routerLink="/admin/flights/new" class="card" style="text-decoration: none; padding: 26px; border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200);">
+          <div style="font-size: 2.2rem; margin-bottom: 12px;">➕</div>
+          <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 8px;">Register New Flight</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">Configure departure/arrival cities, schedule dates, timings, and seat class fares.</p>
         </a>
 
-        <a routerLink="/bookings" class="card" style="text-decoration: none; padding: 24px; transition: transform 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200);">
-          <div style="font-size: 2rem; margin-bottom: 10px;">📋</div>
-          <h4 style="font-size: 1.05rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 6px;">All Customer Bookings</h4>
-          <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">Monitor system-wide flight reservations, payment references, and e-tickets.</p>
+        <a routerLink="/bookings" class="card" style="text-decoration: none; padding: 26px; border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200);">
+          <div style="font-size: 2.2rem; margin-bottom: 12px;">📋</div>
+          <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 8px;">All Customer Bookings</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">Monitor system-wide flight reservations, payment references, and e-tickets.</p>
         </a>
 
         <!-- Registered Users Administration Card -->
-        <div (click)="openUsersModal()" class="card" style="text-decoration: none; padding: 24px; transition: transform 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200); background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
-          <div style="font-size: 2rem; margin-bottom: 10px;">👥</div>
-          <h4 style="font-size: 1.05rem; font-weight: 800; color: #6d28d9; margin-bottom: 6px;">Registered Users</h4>
-          <p style="font-size: 0.825rem; color: var(--text-muted); margin: 0;">Inspect full customer account details, contact info, tier categories, and locations.</p>
+        <div (click)="openUsersModal()" class="card" style="text-decoration: none; padding: 26px; border-radius: 16px; transition: transform 0.2s ease, box-shadow 0.2s ease; cursor: pointer; border: 1.5px solid var(--gray-200); background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);">
+          <div style="font-size: 2.2rem; margin-bottom: 12px;">👥</div>
+          <h4 style="font-size: 1.1rem; font-weight: 800; color: #6d28d9; margin-bottom: 8px;">Registered Users</h4>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">Inspect full customer account details, contact info, tier categories, and locations.</p>
         </div>
       </div>
     </div>

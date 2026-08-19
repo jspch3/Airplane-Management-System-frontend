@@ -22,11 +22,6 @@ import { LoginResponse } from '../../models/user.model';
               View flight booking records and print e-tickets.
             </p>
           </div>
-          <div *ngIf="user && user.role === 'ADMIN'">
-            <button (click)="openAdminCancelModal()" class="btn btn-danger" style="padding: 10px 18px; font-weight: 800; font-size: 0.9rem;">
-              🚫 Cancel Flight Schedule Date & Refund Users
-            </button>
-          </div>
         </div>
 
         <div *ngIf="cancellationSuccess" class="alert alert-success">
@@ -348,65 +343,6 @@ import { LoginResponse } from '../../models/user.model';
           <button (click)="submitPartialCancellation()" class="btn btn-danger" [disabled]="selectedPassengerIds.length === 0 || isSubmittingCancel">
             <span *ngIf="isSubmittingCancel">Processing Cancellation...</span>
             <span *ngIf="!isSubmittingCancel">Confirm Cancellation & Process &#8377; Refund</span>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Admin Flight Date Cancellation Modal -->
-    <div class="modal-backdrop" *ngIf="showAdminCancelModal">
-      <div class="modal-content" style="max-width: 520px; padding: 28px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-          <h3 style="font-size: 1.25rem; font-weight: 800; color: #991b1b; display: flex; align-items: center; gap: 8px;">
-            <span>🚫</span> Cancel Flight Schedule for Date
-          </h3>
-          <button (click)="closeAdminCancelModal()" class="btn btn-outline" style="padding: 2px 8px;">✕</button>
-        </div>
-
-        <p style="font-size: 0.875rem; color: #475569; margin-bottom: 20px;">
-          Select a flight and operating date to cancel. Affected customer bookings will be marked as <strong>CANCELLED BY ADMIN</strong> with <strong>100% Full Refunds</strong> automatically credited to their accounts.
-        </p>
-
-        <div *ngIf="adminCancelError" class="alert alert-danger" style="margin-bottom: 16px;">
-          ❌ {{ adminCancelError }}
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Flight ID <span class="required">*</span></label>
-          <input
-            type="number"
-            [(ngModel)]="adminCancelFlightId"
-            class="form-control"
-            placeholder="e.g. 1"
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Date of Travel <span class="required">*</span></label>
-          <input
-            type="date"
-            [(ngModel)]="adminCancelDate"
-            class="form-control"
-          />
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Reason for Cancellation</label>
-          <input
-            type="text"
-            [(ngModel)]="adminCancelReason"
-            class="form-control"
-            placeholder="e.g. Weather Advisory / Operational Reasons"
-          />
-        </div>
-
-        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
-          <button type="button" (click)="closeAdminCancelModal()" class="btn btn-secondary">
-            Cancel
-          </button>
-          <button type="button" (click)="submitAdminCancelFlightDate()" class="btn btn-danger" [disabled]="isCancellingAdminFlight">
-            <span *ngIf="isCancellingAdminFlight">Cancelling & Refunding...</span>
-            <span *ngIf="!isCancellingAdminFlight">🚫 Confirm & Refund Customers</span>
           </button>
         </div>
       </div>

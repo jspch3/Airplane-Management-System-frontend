@@ -249,8 +249,16 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
         </p>
 
         <div class="form-group" style="margin-bottom: 16px;">
-          <label class="form-label">Target Travel Date <span class="required">*</span></label>
-          <input type="date" [(ngModel)]="adminCancelDate" class="form-control" />
+          <label class="form-label">Target Scheduled Operating Date <span class="required">*</span></label>
+          <select [(ngModel)]="adminCancelDate" class="form-select">
+            <option value="" disabled>-- Select Scheduled Operating Date --</option>
+            <option *ngFor="let dt of validOperatingDatesForCancel" [value]="dt">
+              📅 {{ dt }}
+            </option>
+          </select>
+          <div style="font-size: 0.78rem; color: #0284c7; margin-top: 4px; font-weight: 700;">
+            Showing valid scheduled operating dates for Flight #AMS-{{ selectedFlightForCancel.flightId }} only.
+          </div>
         </div>
 
         <div class="form-group" style="margin-bottom: 24px;">
@@ -736,6 +744,7 @@ export class FlightListComponent implements OnInit {
   adminCancelDate = '';
   adminCancelReason = '';
   isCancellingSchedule = false;
+  validOperatingDatesForCancel: string[] = [];
 
   closeErrorModal(): void {
     this.showErrorModal = false;
@@ -743,9 +752,46 @@ export class FlightListComponent implements OnInit {
 
   openAdminCancelScheduleModal(f: Flight): void {
     this.selectedFlightForCancel = f;
-    this.adminCancelDate = this.getDisplayDateForFlight(f);
-    this.adminCancelReason = 'Severe Operational Maintenance / Flight Cancellation';
+    this.adminCancelReason = 'Severe Weather Advisory / Operational Maintenance';
+    this.validOperatingDatesForCancel = this.getValidOperatingDatesForFlight(f);
+    if (this.validOperatingDatesForCancel.length > 0) {
+      this.adminCancelDate = this.validOperatingDatesForCancel[0];
+    } else {
+      this.adminCancelDate = f.scheduleDate || '';
+    }
     this.showAdminCancelModal = true;
+  }
+
+  getValidOperatingDatesForFlight(flight: Flight): string[] {
+    if (!flight) return [];
+    const datesSet = new Set<string>();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const threeMonths = new Date();
+    threeMonths.setMonth(today.getMonth() + 3);
+
+    const startStr = flight.scheduleDate || today.toISOString().split('T')[0];
+    const freq = flight.flightFrequency || 'SINGLE_DATE';
+    const startParts = startStr.split('-').map(Number);
+    let curr = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+
+    while (curr <= threeMonths) {
+      if (curr >= today) {
+        const iso = `${curr.getFullYear()}-${String(curr.getMonth() + 1).padStart(2, '0')}-${String(curr.getDate()).padStart(2, '0')}`;
+        if (this.isFlightOperatingOnDate(flight, iso)) {
+          datesSet.add(iso);
+        }
+      }
+      if (freq === 'DAILY') curr.setDate(curr.getDate() + 1);
+      else if (freq === 'EVERY_3_DAYS') curr.setDate(curr.getDate() + 3);
+      else if (freq === 'WEEKLY') curr.setDate(curr.getDate() + 7);
+      else if (freq === 'MONTHLY') curr.setMonth(curr.getMonth() + 1);
+      else break;
+
+      if (datesSet.size >= 25) break;
+    }
+
+    return Array.from(datesSet).sort();
   }
 
   closeAdminCancelModal(): void {

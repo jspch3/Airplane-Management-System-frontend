@@ -390,7 +390,49 @@ import { BookingRequest, Booking } from '../../models/booking.model';
         </div>
 
         <div class="alert alert-success" style="margin-bottom: 20px;">
-          <strong>Total Amount Due: &#8377;{{ netPayableAmount.toFixed(2) }}</strong> (Flight #{{ selectedFlight?.flightId }} - {{ bookingForm.value.noOfSeats }} Passengers)
+          <strong>Total Amount Due: &#8377;{{ netPayableAmount.toFixed(2) }} INR</strong> (Flight #{{ selectedFlight?.flightId }} &bull; {{ selectedFlight?.carrierName }} &bull; {{ bookingForm.value.noOfSeats }} Passenger{{ bookingForm.value.noOfSeats > 1 ? 's' : '' }})
+        </div>
+
+        <!-- Complete Price Breakdown Card on Payment Gateway Modal -->
+        <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1.5px solid #cbd5e1; border-radius: 14px; padding: 18px 20px; margin-bottom: 20px;">
+          <div style="font-weight: 800; color: var(--primary-navy); font-size: 0.95rem; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+            <span>🧾 Price Breakdown Summary:</span>
+            <span class="badge" style="background: #e0f2fe; color: #0369a1; font-weight: 800;">
+              {{ bookingForm.value.seatCategory }} Class ({{ bookingForm.value.noOfSeats }} Seat{{ bookingForm.value.noOfSeats > 1 ? 's' : '' }})
+            </span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #475569; margin-bottom: 6px;">
+            <span>Gross Base Ticket Price:</span>
+            <strong>&#8377;{{ grossAmount.toFixed(2) }}</strong>
+          </div>
+
+          <div *ngIf="tierDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #059669; margin-bottom: 6px;">
+            <span>Customer Membership Tier Discount ({{ tierPct }}%):</span>
+            <strong>-&#8377;{{ tierDiscountAmount.toFixed(2) }}</strong>
+          </div>
+
+          <div *ngIf="bulkDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #059669; margin-bottom: 6px;">
+            <span>Bulk Booking Discount ({{ bulkPct }}%):</span>
+            <strong>-&#8377;{{ bulkDiscountAmount.toFixed(2) }}</strong>
+          </div>
+
+          <div *ngIf="advanceDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #059669; margin-bottom: 6px;">
+            <span>Advance Booking Perks Discount ({{ advPct }}%):</span>
+            <strong>-&#8377;{{ advanceDiscountAmount.toFixed(2) }}</strong>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 0.88rem; color: #0284c7; margin-bottom: 6px;">
+            <span>18% Aviation GST Tax:</span>
+            <strong>+&#8377;{{ gstAmount.toFixed(2) }}</strong>
+          </div>
+
+          <hr style="margin: 10px 0; border: none; border-top: 1px dashed #cbd5e1;" />
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">Final Amount to Pay:</span>
+            <span style="font-size: 1.35rem; font-weight: 900; color: #059669;">&#8377;{{ netPayableAmount.toFixed(2) }} INR</span>
+          </div>
         </div>
 
         <div *ngIf="paymentError" class="alert alert-danger" style="margin-bottom: 20px;">

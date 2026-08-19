@@ -123,11 +123,14 @@ import { BookingRequest, Booking } from '../../models/booking.model';
 
             <div class="form-group">
               <label class="form-label">Seat Category Class <span class="required">*</span></label>
-              <select formControlName="seatCategory" (change)="recalculateDiscounts()" class="form-select">
+              <select formControlName="seatCategory" (change)="onSeatCategoryOrDateChanged()" class="form-select">
                 <option value="ECONOMY">Economy Class (&#8377;{{ selectedFlight?.economyClassFare || selectedFlight?.airFare }})</option>
                 <option value="BUSINESS">Business Class (&#8377;{{ selectedFlight?.businessClassFare || (selectedFlight?.airFare ? selectedFlight!.airFare * 1.8 : 0) }})</option>
                 <option value="EXECUTIVE">Executive Class (&#8377;{{ selectedFlight?.executiveClassFare || (selectedFlight?.airFare ? selectedFlight!.airFare * 2.8 : 0) }})</option>
               </select>
+              <div *ngIf="selectedFlight && bookingForm.value.dateOfTravel" style="margin-top: 6px; font-size: 0.8rem; font-weight: 800; color: #0284c7;">
+                🟢 Remaining Seats for {{ bookingForm.value.dateOfTravel }}: <strong>{{ availableSeatsOnTravelDate }}</strong> seats left
+              </div>
             </div>
 
             <div class="form-group">
@@ -670,6 +673,32 @@ export class BookFlightComponent implements OnInit {
   paymentError = '';
   dateError = '';
   selectedQuickDate = '';
+  availableSeatsOnTravelDate = 0;
+
+  onSeatCategoryOrDateChanged(): void {
+    this.recalculateDiscounts();
+    this.fetchAvailableSeatsForDate();
+  }
+
+  fetchAvailableSeatsForDate(): void {
+    if (!this.selectedFlight || !this.selectedFlight.flightId || !this.bookingForm.value.dateOfTravel) return;
+    const flightId = this.selectedFlight.flightId;
+    const date = this.bookingForm.value.dateOfTravel;
+    const cat = this.bookingForm.value.seatCategory || 'ECONOMY';
+
+    this.bookingService.getAvailableSeats(flightId, date, cat).subscribe({
+      next: (avail) => this.availableSeatsOnTravelDate = avail,
+      error: () => {
+        const capacity = cat === 'BUSINESS' ? (this.selectedFlight?.seatCapacityBusinessClass || 30)
+          : cat === 'EXECUTIVE' ? (this.selectedFlight?.seatCapacityExecutiveClass || 12)
+          : (this.selectedFlight?.seatCapacityEconomyClass || 150);
+        const booked = cat === 'BUSINESS' ? (this.selectedFlight?.bookedSeatsBusinessClass || 0)
+          : cat === 'EXECUTIVE' ? (this.selectedFlight?.bookedSeatsExecutiveClass || 0)
+          : (this.selectedFlight?.bookedSeatsEconomyClass || 0);
+        this.availableSeatsOnTravelDate = Math.max(0, capacity - booked);
+      }
+    });
+  }
 
   constructor(
     private fb: FormBuilder,
@@ -1059,6 +1088,7 @@ export class BookFlightComponent implements OnInit {
     } else {
       this.selectedQuickDate = dateVal;
       this.recalculateDiscounts();
+      this.fetchAvailableSeatsForDate();
     }
   }
 
@@ -1091,9 +1121,11 @@ export class BookFlightComponent implements OnInit {
       this.carrierService.getCarrierById(this.selectedFlight.carrierId).subscribe(c => {
         this.selectedCarrier = c;
         this.recalculateDiscounts();
+        this.fetchAvailableSeatsForDate();
       });
     } else {
       this.recalculateDiscounts();
+      this.fetchAvailableSeatsForDate();
     }
   }
 

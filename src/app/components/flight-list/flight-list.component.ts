@@ -3,6 +3,7 @@ import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { FlightService } from '../../services/flight.service';
+import { BookingService } from '../../services/booking.service';
 import { AuthService } from '../../services/auth.service';
 import { Flight } from '../../models/flight.model';
 import { LoginResponse } from '../../models/user.model';
@@ -180,9 +181,9 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 </td>
                 <td>
                   <div style="font-size: 0.825rem; color: var(--gray-600); display: flex; flex-direction: column; gap: 4px;">
-                    <div>Economy: <strong>{{ f.seatCapacityEconomyClass || 150 }}</strong> seats/date</div>
-                    <div>Business: <strong>{{ f.seatCapacityBusinessClass || 30 }}</strong> seats/date</div>
-                    <div>Executive: <strong>{{ f.seatCapacityExecutiveClass || 12 }}</strong> seats/date</div>
+                    <div>Economy: <strong style="color: #0284c7;">{{ getSeatsRemaining(f, 'ECONOMY') }}</strong> seats left</div>
+                    <div>Business: <strong style="color: #0284c7;">{{ getSeatsRemaining(f, 'BUSINESS') }}</strong> seats left</div>
+                    <div>Executive: <strong style="color: #0284c7;">{{ getSeatsRemaining(f, 'EXECUTIVE') }}</strong> seats left</div>
                   </div>
                 </td>
                 <td>
@@ -293,6 +294,7 @@ export class FlightListComponent implements OnInit {
 
   constructor(
     private flightService: FlightService,
+    private bookingService: BookingService,
     private authService: AuthService,
     private router: Router,
     private location: Location
@@ -530,6 +532,34 @@ export class FlightListComponent implements OnInit {
     });
   }
 
+  seatsMap: { [key: string]: { [cat: string]: number } } = {};
+
+  fetchSeatsForFilteredFlights(): void {
+    this.filteredFlights.forEach(f => {
+      if (!f.flightId) return;
+      const targetDate = this.getDisplayDateForFlight(f);
+      if (!targetDate || targetDate === 'Daily') return;
+
+      const key = `${f.flightId}_${targetDate}`;
+      if (!this.seatsMap[key]) {
+        this.bookingService.getAvailableSeatsForFlightAndDate(f.flightId, targetDate).subscribe({
+          next: (map: { [cat: string]: number }) => this.seatsMap[key] = map
+        });
+      }
+    });
+  }
+
+  getSeatsRemaining(f: Flight, category: string): number {
+    const targetDate = this.getDisplayDateForFlight(f);
+    const key = `${f.flightId}_${targetDate}`;
+    if (this.seatsMap[key] && this.seatsMap[key][category] !== undefined) {
+      return this.seatsMap[key][category];
+    }
+    if (category === 'BUSINESS') return Math.max(0, (f.seatCapacityBusinessClass || 30) - (f.bookedSeatsBusinessClass || 0));
+    if (category === 'EXECUTIVE') return Math.max(0, (f.seatCapacityExecutiveClass || 12) - (f.bookedSeatsExecutiveClass || 0));
+    return Math.max(0, (f.seatCapacityEconomyClass || 150) - (f.bookedSeatsEconomyClass || 0));
+  }
+
   applyFilters(): void {
     this.updateCascadingFilterOptions();
 
@@ -557,6 +587,8 @@ export class FlightListComponent implements OnInit {
 
       return matchCarrier && matchDate && matchOrigin && matchDest;
     });
+
+    this.fetchSeatsForFilteredFlights();
   }
 
   getFormattedArrivalTime(f: Flight): string {

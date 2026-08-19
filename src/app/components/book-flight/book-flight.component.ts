@@ -44,6 +44,28 @@ import { BookingRequest, Booking } from '../../models/booking.model';
           </ul>
         </div>
 
+        <!-- Live Per-Date Seat Availability Banner Card -->
+        <div *ngIf="selectedFlight && bookingForm.value.dateOfTravel" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #0284c7; border-radius: 16px; padding: 18px 24px; margin-bottom: 24px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.12); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div style="font-weight: 800; color: #0369a1; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+              🟢 Live Seat Inventory for {{ bookingForm.value.dateOfTravel }}
+            </div>
+            <div style="font-size: 0.88rem; color: #334155; margin-top: 4px;">
+              Flight <strong>#AMS-{{ selectedFlight.flightId }}</strong> ({{ selectedFlight.carrierName }}) &nbsp;|&nbsp;
+              Route: <strong>{{ selectedFlight.origin }} &rarr; {{ selectedFlight.destination }}</strong> &nbsp;|&nbsp;
+              Class: <strong>{{ bookingForm.value.seatCategory }}</strong>
+            </div>
+          </div>
+          <div style="text-align: right; background: #ffffff; padding: 8px 18px; border-radius: 12px; border: 1.5px solid #7dd3fc;">
+            <div style="font-size: 1.35rem; font-weight: 900; color: #0284c7;">
+              {{ availableSeatsOnTravelDate }} <span style="font-size: 0.85rem; font-weight: 700; color: #64748b;">/ {{ getTotalCapacityForCategory() }} seats left</span>
+            </div>
+            <div style="font-size: 0.72rem; font-weight: 800; color: #16a34a; text-transform: uppercase;">
+              🟢 Available for Immediate Booking
+            </div>
+          </div>
+        </div>
+
         <form [formGroup]="bookingForm">
           <!-- Flight Select Box -->
           <div class="form-group">
@@ -674,6 +696,14 @@ export class BookFlightComponent implements OnInit {
   dateError = '';
   selectedQuickDate = '';
   availableSeatsOnTravelDate = 0;
+
+  getTotalCapacityForCategory(): number {
+    if (!this.selectedFlight) return 150;
+    const cat = this.bookingForm?.value?.seatCategory || 'ECONOMY';
+    if (cat === 'BUSINESS') return this.selectedFlight.seatCapacityBusinessClass || 30;
+    if (cat === 'EXECUTIVE') return this.selectedFlight.seatCapacityExecutiveClass || 12;
+    return this.selectedFlight.seatCapacityEconomyClass || 150;
+  }
 
   onSeatCategoryOrDateChanged(): void {
     this.recalculateDiscounts();

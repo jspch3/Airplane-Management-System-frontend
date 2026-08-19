@@ -40,4 +40,13 @@ export class BookingService {
   cancelPartialBooking(bookingId: number, passengerIds: number[]): Observable<Booking> {
     return this.cancelPartialOrFull(bookingId, passengerIds);
   }
+
+  getAvailableSeats(flightId: number, date: string, category: string): Observable<number> {
+    return this.http.get<number>(`${this.apiUrl}/available-seats?flightId=${flightId}&date=${date}&category=${category}`);
+  }
+
+  cancelFlightDate(flightId: number, date: string, reason?: string): Observable<Booking[]> {
+    const r = reason ? encodeURIComponent(reason) : 'Cancelled%20by%20Admin';
+    return this.http.post<Booking[]>(`${this.apiUrl}/admin/cancel-flight-date?flightId=${flightId}&date=${date}&reason=${r}`, {});
+  }
 }

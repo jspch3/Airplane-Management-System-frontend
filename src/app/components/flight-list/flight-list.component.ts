@@ -54,14 +54,13 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
 
           <div class="grid-4" style="gap: 24px; align-items: flex-end;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Live Search by Carrier</label>
-              <input
-                type="text"
-                [(ngModel)]="searchCarrierName"
-                (input)="applyFilters()"
-                class="form-control"
-                placeholder="e.g. Indigo or Air India"
-              />
+              <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter by Carrier</label>
+              <select [(ngModel)]="searchCarrierName" (change)="applyFilters()" class="form-select">
+                <option value="">All Available Carriers</option>
+                <option *ngFor="let c of availableCarriers" [value]="c">
+                  🏢 {{ c }}
+                </option>
+              </select>
             </div>
 
             <!-- Requirement 2: Strict 3-Month Date Window Filter -->
@@ -81,9 +80,9 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter Origin City</label>
               <select [(ngModel)]="searchOrigin" (change)="applyFilters()" class="form-select">
-                <option value="">All Origins</option>
-                <option *ngFor="let apt of majorAirports" [value]="apt" [disabled]="apt === searchDestination">
-                  {{ apt }} {{ apt === searchDestination ? '(Selected in Destination)' : '' }}
+                <option value="">All Available Origins</option>
+                <option *ngFor="let apt of availableOrigins" [value]="apt" [disabled]="apt === searchDestination">
+                  🛫 {{ apt }} {{ apt === searchDestination ? '(Selected in Destination)' : '' }}
                 </option>
               </select>
             </div>
@@ -92,9 +91,9 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             <div class="form-group" style="margin-bottom: 0;">
               <label class="form-label" style="min-height: 26px; display: flex; align-items: flex-end;">Filter Destination City</label>
               <select [(ngModel)]="searchDestination" (change)="applyFilters()" class="form-select">
-                <option value="">All Destinations</option>
-                <option *ngFor="let apt of majorAirports" [value]="apt" [disabled]="apt === searchOrigin">
-                  {{ apt }} {{ apt === searchOrigin ? '(Selected in Origin)' : '' }}
+                <option value="">All Available Destinations</option>
+                <option *ngFor="let apt of availableDestinations" [value]="apt" [disabled]="apt === searchOrigin">
+                  🛬 {{ apt }} {{ apt === searchOrigin ? '(Selected in Origin)' : '' }}
                 </option>
               </select>
             </div>
@@ -353,8 +352,9 @@ export class FlightListComponent implements OnInit {
         return freq === 'SINGLE_DATE';
       }
 
-      // Today: check if departure time has passed
-      const isPassedToday = now >= flightDateTime;
+      // Today: check if departure time is within 30 minutes or passed (30-min buffer)
+      const thirtyMinsLater = new Date(now.getTime() + 30 * 60 * 1000);
+      const isPassedToday = thirtyMinsLater >= flightDateTime;
 
       // If single date flight and passed today, return true
       if (freq === 'SINGLE_DATE') {
@@ -373,11 +373,32 @@ export class FlightListComponent implements OnInit {
     }
   }
 
+  availableCarriers: string[] = [];
+  availableOrigins: string[] = [];
+  availableDestinations: string[] = [];
+
+  extractAvailableFilterOptions(): void {
+    const carriersSet = new Set<string>();
+    const originsSet = new Set<string>();
+    const destsSet = new Set<string>();
+
+    this.flights.forEach(f => {
+      if (f.carrierName) carriersSet.add(f.carrierName);
+      if (f.origin) originsSet.add(f.origin);
+      if (f.destination) destsSet.add(f.destination);
+    });
+
+    this.availableCarriers = Array.from(carriersSet).sort();
+    this.availableOrigins = Array.from(originsSet).sort();
+    this.availableDestinations = Array.from(destsSet).sort();
+  }
+
   loadAllFlights(): void {
     this.isLoading = true;
     this.flightService.getAllFlights().subscribe({
       next: (data: Flight[]) => {
         this.flights = data;
+        this.extractAvailableFilterOptions();
         this.applyFilters();
         this.isLoading = false;
       },

@@ -83,8 +83,8 @@ import { LoginResponse } from '../../models/user.model';
               </a>
             </li>
 
-            <!-- Customer User Avatar Chip Linking to /profile -->
-            <li *ngIf="user && user.role === 'CUSTOMER'">
+            <!-- Customer User Avatar Chip + Logout Button -->
+            <li *ngIf="user && user.role === 'CUSTOMER'" style="display: flex; align-items: center; gap: 10px;">
               <a routerLink="/profile" style="display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.08); padding: 6px 14px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.15); text-decoration: none;">
                 <div style="width: 28px; height: 28px; border-radius: 50%; background: linear-gradient(135deg, #0284c7, #6366f1); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: #ffffff;">
                   {{ user.userName.substring(0, 1).toUpperCase() }}
@@ -96,6 +96,9 @@ import { LoginResponse } from '../../models/user.model';
                   </span>
                 </div>
               </a>
+              <button (click)="logout()" class="btn btn-outline" style="border-color: #ef4444; color: #f87171; font-size: 0.85rem; padding: 6px 14px; font-weight: 700;">
+                🚪 Logout
+              </button>
             </li>
 
             <!-- Admin Menu: Strictly User Chip + Sign Out Only -->

@@ -202,13 +202,28 @@ import { BookingRequest, Booking } from '../../models/booking.model';
               <div class="grid-2">
                 <div class="form-group" style="margin-bottom: 0;">
                   <label class="form-label">Email ID (Optional)</label>
-                  <input
-                    type="email"
-                    formControlName="email"
-                    class="form-control"
-                    [ngClass]="{ 'is-invalid': isPassengerFieldInvalid(i, 'email') }"
-                    placeholder="email@domain.com"
-                  />
+                  <div style="display: flex; gap: 8px; align-items: center;">
+                    <input
+                      type="email"
+                      formControlName="email"
+                      class="form-control"
+                      [ngClass]="{ 'is-invalid': isPassengerFieldInvalid(i, 'email') }"
+                      placeholder="e.g. passenger@gmail.com"
+                      style="flex: 1;"
+                    />
+                    <select
+                      (change)="appendEmailDomain(i, $event)"
+                      class="form-select"
+                      style="max-width: 130px; font-size: 0.82rem; font-weight: 700; color: #0369a1; background: #f0f9ff;"
+                    >
+                      <option value="">&#64;domain</option>
+                      <option value="@gmail.com">&#64;gmail.com</option>
+                      <option value="@yahoo.com">&#64;yahoo.com</option>
+                      <option value="@outlook.com">&#64;outlook.com</option>
+                      <option value="@icloud.com">&#64;icloud.com</option>
+                      <option value="@ams.com">&#64;ams.com</option>
+                    </select>
+                  </div>
                   <div *ngIf="isPassengerFieldInvalid(i, 'email')" class="invalid-feedback">
                     Please enter a valid email address (e.g. name&#64;domain.com).
                   </div>
@@ -232,10 +247,10 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             </div>
           </div>
 
-          <!-- Sequential Fare Calculation Breakdown Summary Box (INR ₹) -->
+          <!-- Fare Calculation Summary Box (INR ₹) -->
           <div class="card" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 2px solid var(--primary-blue); padding: 24px; margin-top: 24px;">
             <h4 style="font-size: 1.1rem; font-weight: 800; color: var(--primary-navy); margin-bottom: 16px;">
-              📊 Live Sequential Fare, 18% GST & Net Amount Calculation (Rupees &#8377;)
+              📊 Fare & Net Amount Summary (Rupees &#8377;)
             </h4>
 
             <div style="display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 8px;">
@@ -244,22 +259,22 @@ import { BookingRequest, Booking } from '../../models/booking.model';
             </div>
 
             <div *ngIf="tierDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
-              <span>1st Step: Customer Membership Tier Discount ({{ currentUser?.customerCategory }}):</span>
+              <span>Customer Membership Tier Discount ({{ tierPct }}%):</span>
               <strong>-&#8377;{{ tierDiscountAmount.toFixed(2) }}</strong>
             </div>
 
             <div *ngIf="bulkDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
-              <span>2nd Step: Bulk Booking Discount (>4 seats):</span>
+              <span>Bulk Booking Discount ({{ bulkPct }}%):</span>
               <strong>-&#8377;{{ bulkDiscountAmount.toFixed(2) }}</strong>
             </div>
 
             <div *ngIf="advanceDiscountAmount > 0" style="display: flex; justify-content: space-between; font-size: 0.95rem; color: var(--accent-emerald); margin-bottom: 8px;">
-              <span>3rd Step: Advance Booking Perks Discount:</span>
+              <span>Advance Booking Perks Discount ({{ advPct }}%):</span>
               <strong>-&#8377;{{ advanceDiscountAmount.toFixed(2) }}</strong>
             </div>
 
             <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: #0284c7; margin-bottom: 8px;">
-              <span>Add 18% Aviation GST Tax:</span>
+              <span>GST (18%):</span>
               <strong>+&#8377;{{ gstAmount.toFixed(2) }}</strong>
             </div>
 
@@ -596,6 +611,22 @@ import { BookingRequest, Booking } from '../../models/booking.model';
               ✅ OK / Done
             </button>
           </div>
+        <!-- Error Popup Modal Dialog -->
+        <div *ngIf="showErrorModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.7); display: flex; align-items: center; justify-content: center; z-index: 9999; backdrop-filter: blur(4px);">
+          <div class="modal-card" style="background: #ffffff; border-radius: 20px; width: 90%; max-width: 480px; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border: 2px solid #ef4444; text-align: center;">
+            <div style="width: 56px; height: 56px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 16px auto;">
+              ⚠️
+            </div>
+            <h3 style="font-size: 1.3rem; font-weight: 800; color: #991b1b; margin-bottom: 12px;">
+              {{ errorModalTitle || 'Booking Validation Error' }}
+            </h3>
+            <p style="font-size: 0.95rem; color: #475569; line-height: 1.5; margin-bottom: 24px;">
+              {{ errorModalMessage }}
+            </p>
+            <button type="button" (click)="closeErrorModal()" class="btn btn-primary" style="width: 100%; padding: 12px 24px; font-weight: 800; font-size: 1rem; background: #dc2626; border-color: #dc2626;">
+              OK, I Understand
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -621,9 +652,16 @@ export class BookFlightComponent implements OnInit {
   gstAmount = 0;
   netPayableAmount = 0;
 
+  tierPct = 0;
+  bulkPct = 0;
+  advPct = 0;
+
   showConfirmationModal = false;
   showPaymentModal = false;
   showConfirmationTicketModal = false;
+  showErrorModal = false;
+  errorModalTitle = '';
+  errorModalMessage = '';
   confirmedBooking: Booking | null = null;
 
   paymentMethod: 'CARD' | 'UPI' = 'CARD';
@@ -839,8 +877,9 @@ export class BookFlightComponent implements OnInit {
       if (depP === 'AM' && hours === 12) hours = 0;
 
       const now = new Date();
+      const thirtyMinsLater = new Date(now.getTime() + 30 * 60 * 1000);
       const flightDepToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
-      return now >= flightDepToday;
+      return thirtyMinsLater >= flightDepToday;
     } catch (e) {
       return false;
     }
@@ -1084,6 +1123,37 @@ export class BookFlightComponent implements OnInit {
 
 
 
+  openErrorModal(title: string, msg: string): void {
+    this.errorModalTitle = title;
+    this.errorModalMessage = msg;
+    this.showErrorModal = true;
+  }
+
+  closeErrorModal(): void {
+    this.showErrorModal = false;
+  }
+
+  appendEmailDomain(passengerIndex: number, event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    if (!select || !select.value) return;
+    const domain = select.value;
+    const passengers = this.bookingForm.get('passengers') as FormArray;
+    if (passengerIndex < 0 || passengerIndex >= passengers.length) return;
+
+    const passengerGroup = passengers.at(passengerIndex) as FormGroup;
+    let currentEmail = (passengerGroup.get('email')?.value || '').trim();
+
+    if (currentEmail.includes('@')) {
+      currentEmail = currentEmail.split('@')[0];
+    }
+    if (currentEmail.length > 0) {
+      passengerGroup.patchValue({ email: currentEmail + domain });
+    } else {
+      passengerGroup.patchValue({ email: 'passenger' + (passengerIndex + 1) + domain });
+    }
+    select.value = '';
+  }
+
   recalculateDiscounts(): void {
     if (!this.selectedFlight) {
       this.grossAmount = 0;
@@ -1092,6 +1162,9 @@ export class BookFlightComponent implements OnInit {
       this.advanceDiscountAmount = 0;
       this.gstAmount = 0;
       this.netPayableAmount = 0;
+      this.tierPct = 0;
+      this.bulkPct = 0;
+      this.advPct = 0;
       return;
     }
 
@@ -1115,6 +1188,7 @@ export class BookFlightComponent implements OnInit {
       else if (userCat === 'GOLD') tierPct = this.selectedCarrier.goldUserDiscount || 0;
       else if (userCat === 'PLATINUM') tierPct = this.selectedCarrier.platinumUserDiscount || 0;
     }
+    this.tierPct = tierPct;
     this.tierDiscountAmount = (this.grossAmount * tierPct) / 100;
     const priceAfterTier = Math.max(0, this.grossAmount - this.tierDiscountAmount);
 
@@ -1123,6 +1197,7 @@ export class BookFlightComponent implements OnInit {
     if (seats > 4 && this.selectedCarrier) {
       bulkPct = this.selectedCarrier.bulkBookingDiscount || 0;
     }
+    this.bulkPct = bulkPct;
     this.bulkDiscountAmount = (priceAfterTier * bulkPct) / 100;
     const priceAfterBulk = Math.max(0, priceAfterTier - this.bulkDiscountAmount);
 
@@ -1137,15 +1212,16 @@ export class BookFlightComponent implements OnInit {
       else if (diffDays >= 60) advPct = this.selectedCarrier.discount60DaysAdvanceBooking || 0;
       else if (diffDays >= 30) advPct = this.selectedCarrier.discount30DaysAdvanceBooking || 0;
     }
+    this.advPct = advPct;
     this.advanceDiscountAmount = (priceAfterBulk * advPct) / 100;
-    const subtotalPrice = Math.max(this.grossAmount * 0.20, priceAfterBulk - this.advanceDiscountAmount);
+    const subtotalPrice = Math.max(0, priceAfterBulk - this.advanceDiscountAmount);
 
     // 4. Add 18% Aviation GST Tax
     this.gstAmount = subtotalPrice * 0.18;
 
-    // 5. Total Discount & Non-Zero Net Total Payable
+    // 5. Total Discount & Exact Net Total Payable
     this.totalDiscountAmount = this.tierDiscountAmount + this.bulkDiscountAmount + this.advanceDiscountAmount;
-    this.netPayableAmount = Math.max(500, subtotalPrice + this.gstAmount);
+    this.netPayableAmount = Math.max(0, subtotalPrice + this.gstAmount);
   }
 
   goBack(): void {
@@ -1173,6 +1249,11 @@ export class BookFlightComponent implements OnInit {
     if (this.bookingForm.invalid) {
       this.bookingForm.markAllAsTouched();
       this.bookingError = 'Please fix all highlighted errors in the form before proceeding.';
+      this.openErrorModal('Booking Form Validation Error', this.bookingError);
+      return;
+    }
+    if (this.dateError) {
+      this.openErrorModal('Invalid Travel Date', this.dateError);
       return;
     }
     this.showConfirmationModal = true;

@@ -13,14 +13,21 @@ import { LoginResponse } from '../../models/user.model';
   template: `
     <div style="max-width: 1150px; margin: 0 auto;">
       <div class="card">
-        <div style="margin-bottom: 16px;">
-          <div class="card-title">
-            <span>📋 Flight Booking History & Passenger Management</span>
+        <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div>
+            <div class="card-title">
+              <span>📋 Flight Booking History & Passenger Management</span>
+            </div>
+            <p class="card-subtitle" style="margin-bottom: 0;">
+              View flight booking records and print e-tickets.
+            </p>
+          </div>
+          <div *ngIf="user && user.role === 'ADMIN'">
+            <button (click)="openAdminCancelModal()" class="btn btn-danger" style="padding: 10px 18px; font-weight: 800; font-size: 0.9rem;">
+              🚫 Cancel Flight Schedule Date & Refund Users
+            </button>
           </div>
         </div>
-        <p class="card-subtitle">
-          View flight booking records and print e-tickets.
-        </p>
 
         <div *ngIf="cancellationSuccess" class="alert alert-success">
           ✅ {{ cancellationSuccess }}
@@ -100,9 +107,9 @@ import { LoginResponse } from '../../models/user.model';
                   <span class="badge" [ngClass]="{
                     'badge-success': b.bookingStatus === 'BOOKED' || b.bookingStatus === 'Booked',
                     'badge-warning': b.bookingStatus === 'PARTIALLY_CANCELLED' || b.bookingStatus === 'Partially Cancelled',
-                    'badge-danger': b.bookingStatus === 'CANCELLED' || b.bookingStatus === 'Cancelled'
+                    'badge-danger': b.bookingStatus === 'CANCELLED' || b.bookingStatus === 'Cancelled' || b.bookingStatus === 'CANCELLED_BY_ADMIN'
                   }">
-                    {{ b.bookingStatus }}
+                    {{ b.bookingStatus === 'CANCELLED_BY_ADMIN' ? 'CANCELLED BY ADMIN (100% REFUNDED)' : b.bookingStatus }}
                   </span>
                 </td>
                 <td><code style="font-size: 0.8rem; background: var(--gray-100); padding: 3px 6px; border-radius: 4px;">{{ b.transactionId }}</code></td>
@@ -112,9 +119,9 @@ import { LoginResponse } from '../../models/user.model';
                       🖨️ Print Ticket
                     </button>
 
-                    <!-- Customer Cancel Option: Disabled/Hidden if journey is completed -->
+                    <!-- Customer Cancel Option: Disabled/Hidden if journey is completed or cancelled by admin -->
                     <button
-                      *ngIf="user && user.role === 'CUSTOMER' && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled' && !isJourneyCompleted(b)"
+                      *ngIf="user && user.role === 'CUSTOMER' && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled' && b.bookingStatus !== 'CANCELLED_BY_ADMIN' && !isJourneyCompleted(b)"
                       (click)="openCancelModal(b)"
                       class="btn btn-danger btn-sm"
                       style="padding: 6px 10px; font-size: 0.8rem;"
@@ -123,7 +130,7 @@ import { LoginResponse } from '../../models/user.model';
                     </button>
 
                     <span
-                      *ngIf="user && user.role === 'CUSTOMER' && isJourneyCompleted(b) && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled'"
+                      *ngIf="user && user.role === 'CUSTOMER' && isJourneyCompleted(b) && b.bookingStatus !== 'CANCELLED' && b.bookingStatus !== 'Cancelled' && b.bookingStatus !== 'CANCELLED_BY_ADMIN'"
                       class="badge"
                       style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; font-weight: 700; border: 1px solid #cbd5e1;"
                     >
@@ -341,6 +348,65 @@ import { LoginResponse } from '../../models/user.model';
         </div>
       </div>
     </div>
+
+    <!-- Admin Flight Date Cancellation Modal -->
+    <div class="modal-backdrop" *ngIf="showAdminCancelModal">
+      <div class="modal-content" style="max-width: 520px; padding: 28px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <h3 style="font-size: 1.25rem; font-weight: 800; color: #991b1b; display: flex; align-items: center; gap: 8px;">
+            <span>🚫</span> Cancel Flight Schedule for Date
+          </h3>
+          <button (click)="closeAdminCancelModal()" class="btn btn-outline" style="padding: 2px 8px;">✕</button>
+        </div>
+
+        <p style="font-size: 0.875rem; color: #475569; margin-bottom: 20px;">
+          Select a flight and operating date to cancel. Affected customer bookings will be marked as <strong>CANCELLED BY ADMIN</strong> with <strong>100% Full Refunds</strong> automatically credited to their accounts.
+        </p>
+
+        <div *ngIf="adminCancelError" class="alert alert-danger" style="margin-bottom: 16px;">
+          ❌ {{ adminCancelError }}
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Flight ID <span class="required">*</span></label>
+          <input
+            type="number"
+            [(ngModel)]="adminCancelFlightId"
+            class="form-control"
+            placeholder="e.g. 1"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Date of Travel <span class="required">*</span></label>
+          <input
+            type="date"
+            [(ngModel)]="adminCancelDate"
+            class="form-control"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Reason for Cancellation</label>
+          <input
+            type="text"
+            [(ngModel)]="adminCancelReason"
+            class="form-control"
+            placeholder="e.g. Weather Advisory / Operational Reasons"
+          />
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" (click)="closeAdminCancelModal()" class="btn btn-secondary">
+            Cancel
+          </button>
+          <button type="button" (click)="submitAdminCancelFlightDate()" class="btn btn-danger" [disabled]="isCancellingAdminFlight">
+            <span *ngIf="isCancellingAdminFlight">Cancelling & Refunding...</span>
+            <span *ngIf="!isCancellingAdminFlight">🚫 Confirm & Refund Customers</span>
+          </button>
+        </div>
+      </div>
+    </div>
   `
 })
 export class BookingListComponent implements OnInit {
@@ -350,7 +416,14 @@ export class BookingListComponent implements OnInit {
 
   showCancelModal = false;
   showPrintTicketModal = false;
+  showAdminCancelModal = false;
   printableBooking: Booking | null = null;
+
+  adminCancelFlightId: number | null = null;
+  adminCancelDate = '';
+  adminCancelReason = 'Weather Advisory / Operational Reasons';
+  isCancellingAdminFlight = false;
+  adminCancelError = '';
 
   activeBooking: Booking | null = null;
   selectedPassengerIds: number[] = [];
@@ -524,6 +597,41 @@ export class BookingListComponent implements OnInit {
       error: (err: any) => {
         this.isSubmittingCancel = false;
         this.cancelError = err.error?.message || 'Cancellation failed.';
+      }
+    });
+  }
+
+  openAdminCancelModal(): void {
+    this.adminCancelFlightId = null;
+    this.adminCancelDate = new Date().toISOString().split('T')[0];
+    this.adminCancelReason = 'Weather Advisory / Operational Reasons';
+    this.adminCancelError = '';
+    this.showAdminCancelModal = true;
+  }
+
+  closeAdminCancelModal(): void {
+    this.showAdminCancelModal = false;
+  }
+
+  submitAdminCancelFlightDate(): void {
+    if (!this.adminCancelFlightId || !this.adminCancelDate) {
+      this.adminCancelError = 'Please select a valid Flight ID and Date of Travel.';
+      return;
+    }
+
+    this.isCancellingAdminFlight = true;
+    this.adminCancelError = '';
+
+    this.bookingService.cancelFlightDate(this.adminCancelFlightId, this.adminCancelDate, this.adminCancelReason).subscribe({
+      next: (cancelledBookings) => {
+        this.isCancellingAdminFlight = false;
+        this.showAdminCancelModal = false;
+        this.cancellationSuccess = `Successfully cancelled Flight #${this.adminCancelFlightId} on ${this.adminCancelDate}. Total ${cancelledBookings.length} booking(s) updated with 100% full customer refunds!`;
+        this.loadBookings();
+      },
+      error: (err) => {
+        this.isCancellingAdminFlight = false;
+        this.adminCancelError = err?.error?.message || 'Failed to cancel flight date schedule.';
       }
     });
   }

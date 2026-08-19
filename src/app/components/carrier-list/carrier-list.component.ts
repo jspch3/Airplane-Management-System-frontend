@@ -176,7 +176,7 @@ import { Carrier } from '../../models/carrier.model';
     </div>
 
     <!-- DELETE CARRIER CONFIRMATION MODAL -->
-    <div class="modal-backdrop" *ngIf="showDeleteModal && activeCarrier">
+    <div class="modal-backdrop" *ngIf="showDeleteModal && activeCarrier" style="z-index: 1050;">
       <div class="modal-content" style="max-width: 580px; padding: 40px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
           <h3 style="font-size: 1.4rem; font-weight: 900; color: #dc2626;">
@@ -197,9 +197,11 @@ import { Carrier } from '../../models/carrier.model';
           </button>
         </div>
       </div>
+    </div>
+
     <!-- Error Modal Popup for Deletion Failures -->
-    <div *ngIf="showErrorModal" class="modal-backdrop" style="z-index: 1060;">
-      <div class="modal-content" style="max-width: 440px; padding: 32px; border-radius: 20px; text-align: center;">
+    <div *ngIf="showErrorModal" class="modal-backdrop" style="z-index: 1090;">
+      <div class="modal-content" style="max-width: 440px; padding: 32px; border-radius: 20px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
         <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
         <h3 style="font-weight: 800; color: #ef4444; margin-bottom: 12px;">Carrier Deletion Error</h3>
         <p style="color: #475569; font-size: 0.95rem; font-weight: 600; margin-bottom: 24px;">
@@ -209,7 +211,6 @@ import { Carrier } from '../../models/carrier.model';
           OK, Understood
         </button>
       </div>
-    </div>
     </div>
   `
 })
@@ -298,8 +299,8 @@ export class CarrierListComponent implements OnInit {
         } else {
           this.popupErrorMessage = msg || "We can't delete the carrier, it has active flights.";
         }
+        this.showDeleteModal = false;
         this.showErrorModal = true;
-        this.closeDeleteModal();
       }
     });
   }

@@ -275,20 +275,6 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
       </div>
     </div>
 
-    <!-- Flight Delete Error Modal Popup -->
-    <div *ngIf="showErrorModal" class="modal-backdrop" style="z-index: 1060;">
-      <div class="modal-content" style="max-width: 440px; padding: 32px; border-radius: 20px; text-align: center;">
-        <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
-        <h3 style="font-weight: 800; color: #ef4444; margin-bottom: 12px;">Flight Deletion Error</h3>
-        <p style="color: #475569; font-size: 0.95rem; font-weight: 600; margin-bottom: 24px;">
-          {{ popupErrorMessage }}
-        </p>
-        <button (click)="closeErrorModal()" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; border-radius: 12px;">
-          OK, Understood
-        </button>
-      </div>
-    </div>
-
         <div style="margin-top: 36px; border-top: 1.5px solid var(--gray-200); padding-top: 24px;">
           <button type="button" (click)="goBack()" class="btn btn-secondary" style="padding: 12px 24px; font-weight: 700;">
             &larr; Back to Previous Page
@@ -298,7 +284,7 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
     </div>
 
     <!-- Flight Deletion Confirmation Modal -->
-    <div class="modal-backdrop" *ngIf="showDeleteModal && flightToDelete">
+    <div class="modal-backdrop" *ngIf="showDeleteModal && flightToDelete" style="z-index: 1050;">
       <div class="modal-content" style="max-width: 600px; padding: 40px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
           <h3 style="font-size: 1.4rem; font-weight: 900; color: #dc2626;">
@@ -324,6 +310,20 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
             <span *ngIf="!isDeleting">🗑️ Yes, Delete Flight</span>
           </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Flight Delete Error Modal Popup -->
+    <div *ngIf="showErrorModal" class="modal-backdrop" style="z-index: 1090;">
+      <div class="modal-content" style="max-width: 440px; padding: 32px; border-radius: 20px; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3);">
+        <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
+        <h3 style="font-weight: 800; color: #ef4444; margin-bottom: 12px;">Flight Deletion Error</h3>
+        <p style="color: #475569; font-size: 0.95rem; font-weight: 600; margin-bottom: 24px;">
+          {{ popupErrorMessage }}
+        </p>
+        <button (click)="closeErrorModal()" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 800; border-radius: 12px;">
+          OK, Understood
+        </button>
       </div>
     </div>
   `
@@ -857,8 +857,8 @@ export class FlightListComponent implements OnInit {
         } else {
           this.popupErrorMessage = msg || "We can't delete the flight, it has active users.";
         }
+        this.showDeleteModal = false;
         this.showErrorModal = true;
-        this.closeDeleteModal();
       }
     });
   }

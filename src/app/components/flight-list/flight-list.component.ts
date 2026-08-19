@@ -156,9 +156,9 @@ import { MAJOR_AIRPORTS } from '../../constants/location.data';
                 </td>
                 <td>
                   <div style="font-size: 0.825rem; color: var(--gray-600); display: flex; flex-direction: column; gap: 4px;">
-                    <div>Economy: <strong>{{ (f.seatCapacityEconomyClass || 150) - (f.bookedSeatsEconomyClass || 0) }}</strong> seats left</div>
-                    <div>Business: <strong>{{ (f.seatCapacityBusinessClass || 30) - (f.bookedSeatsBusinessClass || 0) }}</strong> seats left</div>
-                    <div>Executive: <strong>{{ (f.seatCapacityExecutiveClass || 12) - (f.bookedSeatsExecutiveClass || 0) }}</strong> seats left</div>
+                    <div>Economy: <strong>{{ f.seatCapacityEconomyClass || 150 }}</strong> seats/date</div>
+                    <div>Business: <strong>{{ f.seatCapacityBusinessClass || 30 }}</strong> seats/date</div>
+                    <div>Executive: <strong>{{ f.seatCapacityExecutiveClass || 12 }}</strong> seats/date</div>
                   </div>
                 </td>
                 <td>
